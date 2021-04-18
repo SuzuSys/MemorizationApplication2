@@ -1,13 +1,15 @@
 <template>
   <div id="app">
-    <div id="setting">
+    <div id="setting_button">
       <el-button icon="el-icon-notebook-2" @click="drawer = true">Add sheet</el-button>
     </div>
     <el-drawer
       title="Add Sheet"
       :visible.sync="drawer"
       :direction="direction">
-      <span>Hi, there!</span>
+      <div id="setting">
+        <p>Hi, there</p>
+      </div>
     </el-drawer>
     <div id="sheet">
       <Question formula="$x$"/>
@@ -42,12 +44,18 @@ export default {
   background-color: white;
   padding: 10mm;
 }
-#setting {
+#setting_button {
   position: fixed;
   top: 20px;
   left: 20px;
 }
+#setting {
+  padding: 20px;
+}
 @media print {
+  #setting_button {
+    display: none;
+  }
   #setting {
     display: none;
   }
