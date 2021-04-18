@@ -1,0 +1,19 @@
+[
+  {
+    "name": "基本情報技術者試験",
+    "children": [
+      {
+        "name": "第1章 情報の基礎理論",
+        "url": "./assets/json/FE/01_foundation.json"
+      },
+      {
+        "name": "第2章 データ構造とアルゴリズム",
+        "url": "./assets/json/FE/02_structure.json"
+      },
+      {
+        "name": "第3章 ハードウェア",
+        "url": "./assets/json/FE/03_hardware.json"
+      }
+    ]
+  }
+]
