@@ -1,7 +1,7 @@
 [
   {
     "label": "基本情報技術者試験",
-    "value": "./assets/json/FE/",
+    "value": "./json/FE/",
     "children": [
       {
         "label": "第1章 情報の基礎理論",

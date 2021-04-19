@@ -11,12 +11,12 @@
         <p>Shuffle: <el-switch v-model="shuffle" /></p>
         <el-divider content-position="left">Make Sheet</el-divider>
         <el-switch
-          v-model="temp_isextype"
+          v-model="temp.extype"
           inactive-text="word test"
           active-text="explanation test" />
         <el-cascader
           placeholder="Select Sheet"
-          v-model="temp_url"
+          v-model="temp.url"
           :options="options"
           @change="makeLayer" />
         <div v-show="show_label">
@@ -44,11 +44,12 @@ export default {
       drawer: false,
       direction: 'ltr',
       shuffle: false,
-      temp_isextype: false,
-      temp_url: [],
+      temp: {
+        isextype: false,
+        url: [],
+        layer: 0
+      },
       show_label: false,
-      temp_layer: 0,
-      temp_json: {}
     }
   },
   computed: {
@@ -58,6 +59,7 @@ export default {
   },
   methods: {
     makeLayer() {
+      this.$store.dispatch('lookForLayer', this.temp.url.join(''))
     },
     add_sheet() {
 
