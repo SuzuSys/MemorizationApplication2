@@ -12,5 +12,5 @@ latex, 画像も表示できる。
 ## Framework
 Vue2
 ## Plugin
-vue-mathjax
+vue-mathjax  
 Element-UI
