@@ -58,8 +58,6 @@ export default {
   },
   methods: {
     makeLayer() {
-      this.temp_json = import(this.temp_url.join(""));
-      console.log(this.temp_json);
     },
     add_sheet() {
 
