@@ -33,7 +33,6 @@
 
 <script>
 import Question from "./components/Question";
-import linking from "./assets/json/linking.json"
 
 export default {
   name: "App",
@@ -44,20 +43,21 @@ export default {
     return {
       drawer: false,
       direction: 'ltr',
-      linking: linking,
       shuffle: false,
       temp_isextype: false,
       temp_url: [],
-      options: linking,
       show_label: false,
       temp_layer: 0,
       temp_json: {}
     }
   },
+  computed: {
+    options () {
+      return this.$store.state.linking
+    }
+  },
   methods: {
     makeLayer() {
-      this.temp_json = import(this.temp_url.join(""));
-      console.log(this.temp_json);
     },
     add_sheet() {
 
