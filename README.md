@@ -13,4 +13,5 @@ latex, 画像も表示できる。
 Vue2
 ## Plugin
 vue-mathjax  
-Element-UI
+Element-UI  
+vuex
