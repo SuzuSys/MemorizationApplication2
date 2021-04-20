@@ -18,13 +18,10 @@ const store = new Vuex.Store({
     }
   },
   actions: {
-    async lookForLayer (ctx, url) {
+    async lookJson (ctx, url) {
       await axios.get(url).then(res => ctx.commit('setTempJson', res.data));
-      console.log(ctx.state.temp.json);
     }
   }
 })
 
 export default store
-
-console.log(axios.get('./json/link.json'))

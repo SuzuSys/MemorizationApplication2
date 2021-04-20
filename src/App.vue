@@ -1,7 +1,8 @@
 <template>
   <div id="app">
     <div id="setting_button">
-      <el-button icon="el-icon-notebook-2" @click="drawer = true">Add Sheet</el-button>
+      <el-button 
+        icon="el-icon-notebook-2" @click="drawer=true">Add Sheet</el-button>
     </div>
     <el-drawer
       title="Add Sheet"
@@ -10,15 +11,29 @@
       <div id="setting">
         <p>Shuffle: <el-switch v-model="shuffle" /></p>
         <el-divider content-position="left">Make Sheet</el-divider>
-        <el-switch
-          v-model="temp.extype"
-          inactive-text="word test"
-          active-text="explanation test" />
-        <el-cascader
-          placeholder="Select Sheet"
-          v-model="temp.url"
-          :options="options"
-          @change="makeLayer" />
+        <p>
+          <el-switch
+            v-model="temp.extype"
+            inactive-text="word test"
+            active-text="explanation test" />
+        </p>
+        <p>
+          <el-cascader
+            placeholder="Select Sheet"
+            v-model="temp.url"
+            :options="options"
+            @change="browse_button=false" />
+        </p>
+        <p>
+          <el-button 
+            @click="makeLayer" 
+            :disabled="browse_button" 
+            size="mini"
+            icon="el-icon-search"
+            :loading="browse_loading">
+              Browse available layers
+          </el-button>
+        </p>
         <div v-show="show_label">
 
         </div>
@@ -47,8 +62,10 @@ export default {
       temp: {
         isextype: false,
         url: [],
-        layer: 0
+        layer: []
       },
+      browse_button: true,
+      browse_loading: false,
       show_label: false,
     }
   },
@@ -59,7 +76,9 @@ export default {
   },
   methods: {
     makeLayer() {
-      this.$store.dispatch('lookForLayer', this.temp.url.join(''))
+      this.browse_loading = true;
+      this.$store.dispatch('lookJson', this.temp.url.join(''));
+      this.browse_loading = false;
     },
     add_sheet() {
 
