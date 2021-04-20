@@ -78,6 +78,16 @@ export default {
     makeLayer() {
       this.browse_loading = true;
       this.$store.dispatch('lookJson', this.temp.url.join(''));
+
+      let position = this.$store.state.temp.json;
+      let history = [];
+      if (isextype) {
+        let exist_layer = [];
+      }
+      else {
+        let max_layer;
+      }
+
       this.browse_loading = false;
     },
     add_sheet() {
