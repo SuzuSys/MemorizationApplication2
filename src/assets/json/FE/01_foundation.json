@@ -1,9 +1,0 @@
-[
-  {
-    "isnumeric": true,
-    "x": 10,
-    "explanation": "$$\\vec{x}=\\begin{pmatrix}k\\\\M\\\\G\\\\T\\end{pmatrix}=\\begin{pmatrix}1\\\\2\\\\3\\\\4\\end{pmatrix}$$",
-    "img": 0,
-    "children": []
-  }
-]
