@@ -2,14 +2,18 @@
   <div id="app">
     <div id="setting_button">
       <el-button 
-        icon="el-icon-notebook-2" @click="drawer=true">Add Sheet</el-button>
+        icon="el-icon-notebook-2"
+        @click="drawer=true">
+          Add Sheet
+      </el-button>
     </div>
     <el-drawer
       title="Add Sheet"
+      :with-header="false"
       :visible.sync="drawer"
-      :direction="direction">
+      :direction="direction"
+      size="50%">
       <div id="setting">
-        <p>Shuffle: <el-switch v-model="shuffle" /></p>
         <el-divider content-position="left">Make Sheet</el-divider>
         <p>
           <el-switch
@@ -21,7 +25,7 @@
         <p>
           <el-cascader
             placeholder="Select Sheet"
-            v-model="temp.url"
+            v-model="temp.sheet"
             :options="options"
             @change="browse_button=false; show_label=false; disabled_add_button=true" />
         </p>
@@ -36,25 +40,54 @@
           </el-button>
         </p>
         <div v-if="show_label">
-          <el-select v-model="temp.layer" @change="disabled_add_button=false">
-            <el-option
-              v-for="(item, index) in temp.available_layers"
-              :key="index"
-              :label="item.label"
-              :value="item.value"
-              :disabled="item.disabled" />
-          </el-select>
-          <p id="add_button">
-            <el-button
-              :disabled="disabled_add_button"
-              icon="el-icon-bottom"
-              @click="addSheet">
-                Add
-            </el-button>
-          </p>
+          <el-row>
+            <el-col :span="12">
+              <el-select v-model="temp.layer" @change="disabled_add_button=false">
+                <el-option
+                  v-for="(item, index) in temp.available_layers"
+                  :key="index"
+                  :label="item.label"
+                  :value="item.value"
+                  :disabled="item.disabled" />
+              </el-select>
+            </el-col>
+            <el-col :span="12" class="right">
+              <el-button
+                :disabled="disabled_add_button"
+                icon="el-icon-bottom"
+                @click="addSheet">
+                  Add
+              </el-button>
+            </el-col>
+          </el-row>
         </div>
-
         <el-divider content-position="left">Added Sheet</el-divider>
+        <el-table :data="table_data" style="width:100%" empty-text="No Sheet">
+          <el-table-column prop="content" label="Content" width="300" />
+          <el-table-column prop="target" label="Target" width="100" />
+          <el-table-column prop="layerlabel" label="Layer" width="70" />
+          <el-table-column label="Operation" width="120">
+            <template slot-scope="scope">
+              <el-button
+                @click.native.prevent="deleteRow(scope.$index, table_data)"
+                size="small"
+                type="danger"
+                plain>
+                  Remove
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+        <el-row>
+          <el-col :span="12">
+            Shuffle: <el-switch v-model="shuffle" />
+          </el-col>
+          <el-col :span="12" class="right">
+            <el-button icon="el-icon-right">
+              Create Document
+            </el-button>
+          </el-col>
+        </el-row>
       </div>
     </el-drawer>
     <div id="sheet">
@@ -77,15 +110,17 @@ export default {
       direction: 'ltr',
       shuffle: false,
       temp: {
+        sheet: [],
+        url: '',
         isextype: false,
-        url: [],
         available_layers: [],
         layer: "Select Layer"
       },
       browse_button: true,
       browse_loading: false,
       show_label: false,
-      disabled_add_button: true
+      disabled_add_button: true,
+      table_data: []
     }
   },
   computed: {
@@ -98,7 +133,11 @@ export default {
       this.browse_loading = true;
       this.temp.available_layers = [];
       this.temp.layer = 'Select Layer';
-      this.$store.dispatch('lookJson', this.temp.url.join('')).then(() => {
+      this.temp.url = '';
+      for (let i = 0; i < this.temp.sheet.length; i++) {
+        this.temp.url += this.temp.sheet[i].url + '/';
+      }
+      this.$store.dispatch('lookJson', this.temp.url).then(() => {
         let position = this.$store.state.temp.json;
         let history = [];
         let finish = false;
@@ -174,7 +213,18 @@ export default {
       });
     },
     addSheet() {
-      console.log(this.temp.layer);
+      let layerlabel = 'Layer' + String(this.temp.layer + 1);
+      this.table_data.push({
+        content: this.temp.sheet[this.temp.sheet.length - 1].label,
+        url: this.temp.url,
+        target: this.temp.isextype ? 'explanation' : 'word',
+        type: this.temp.isextype,
+        layerlabel: layerlabel,
+        layer: this.temp.layer
+      });
+    },
+    deleteRow(index, rows) {
+      rows.splice(index, 1);
     }
   }
 };
@@ -199,7 +249,10 @@ export default {
   padding: 0px 20px;
   color: #505050;
 }
-#add_button {
+.el-row {
+  margin-top: 10px;
+}
+.right {
   text-align: right;
 }
 @media print {
