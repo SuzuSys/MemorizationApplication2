@@ -29,6 +29,16 @@ const store = new Vuex.Store({
     },
     appendDocument (state, payload) {
       state.questions.push(payload);
+    },
+    emptyDocument (state) {
+      state.questions = [];
+    },
+    shuffleQuestions (state) {
+      let array = state.questions;
+      for (let i = array.length - 1; i >= 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
     }
   },
   actions: {
@@ -36,10 +46,10 @@ const store = new Vuex.Store({
       await axios.get(url).then(res => ctx.commit('setTempJson', res.data));
     },
     async createDocument (ctx, table_data) {
+      ctx.commit('emptyDocument');
       for (let i = 0; i < table_data.length; i++) {
         let td = table_data[i]
         await ctx.dispatch('createQuestion', {url: td.url, isextype: td.isextype, layer: td.layer});
-        console.log(i)
       }
     },
     async createQuestion (ctx, payload) {
@@ -54,9 +64,11 @@ const store = new Vuex.Store({
             if (!(position.isnumeric && payload.isextype)) {
               ctx.commit('appendDocument', {
                 x: position.x,
-                explanation: position.explanation,
+                y: position.y,
                 img: position.img,
-                isextype: payload.isextype
+                isextype: payload.isextype,
+                x_class: position.x_class,
+                y_class: position.y_class
               });
             }
             move = true;

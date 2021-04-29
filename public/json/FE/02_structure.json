@@ -2,19 +2,25 @@
   {
     "isnumeric": false,
     "x": 6,
-    "explanation": "explanation",
+    "x_class": "数値",
+    "y": "explanation",
+    "y_class": "説明",
     "img": 0,
     "children": [
       {
         "isnumeric": true,
         "x": 7,
-        "explanation": "explanation",
+        "x_class": "数値",
+        "y": "explanation",
+        "y_class": "説明",
         "img": 0,
         "children": [
           {
             "isnumeric": false,
             "x": 8,
-            "explanation": "explanation",
+            "x_class": "数値",
+            "y": "explanation",
+            "y_class": "説明",
             "img": 0,
             "children": []
           }
@@ -25,13 +31,17 @@
   {
     "isnumeric": true,
     "x": 9,
-    "explanation": "explanation",
+    "x_class": "数値",
+    "y": "explanation",
+    "y_class": "説明",
     "img": 0,
     "children": [
       {
         "isnumeric": true,
         "x": 10,
-        "explanation": "explanation",
+        "x_class": "数値",
+        "y": "explanation",
+        "y_class": "説明",
         "img": 0,
         "children": []
       }
