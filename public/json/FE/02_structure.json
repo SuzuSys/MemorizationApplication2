@@ -1,0 +1,40 @@
+[
+  {
+    "isnumeric": false,
+    "x": 6,
+    "explanation": "explanation",
+    "img": 0,
+    "children": [
+      {
+        "isnumeric": true,
+        "x": 7,
+        "explanation": "explanation",
+        "img": 0,
+        "children": [
+          {
+            "isnumeric": false,
+            "x": 8,
+            "explanation": "explanation",
+            "img": 0,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "isnumeric": true,
+    "x": 9,
+    "explanation": "explanation",
+    "img": 0,
+    "children": [
+      {
+        "isnumeric": true,
+        "x": 10,
+        "explanation": "explanation",
+        "img": 0,
+        "children": []
+      }
+    ]
+  }
+]

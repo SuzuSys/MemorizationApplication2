@@ -7,6 +7,10 @@
           Add Sheet
       </el-button>
     </div>
+    <div id="answer_switch" v-show="exist_document">
+      Answer:
+      <el-switch @change="changedShowAnswer" v-model="show_answer" />
+    </div>
     <el-drawer
       title="Add Sheet"
       :with-header="false"
@@ -83,7 +87,11 @@
             Shuffle: <el-switch v-model="shuffle" />
           </el-col>
           <el-col :span="12" class="right">
-            <el-button icon="el-icon-right">
+            <el-button
+              icon="el-icon-right"
+              @click="createDocument"
+              v-loading.fullscreen.lock="fullscreen_loading"
+              :disabled="disabled_create_button">
               Create Document
             </el-button>
           </el-col>
@@ -91,7 +99,9 @@
       </div>
     </el-drawer>
     <div id="sheet">
-      <Question formula="$x$"/>
+      <div v-show="exist_document">
+        <Question formula="$x$"/>
+      </div>
     </div>
   </div>
 </template>
@@ -120,7 +130,12 @@ export default {
       browse_loading: false,
       show_label: false,
       disabled_add_button: true,
-      table_data: []
+      table_data: [],
+      questions: this.$store.state.questions,
+      exist_document: false,
+      show_answer: false,
+      fullscreen_loading: false,
+      disabled_create_button: true
     }
   },
   computed: {
@@ -218,13 +233,29 @@ export default {
         content: this.temp.sheet[this.temp.sheet.length - 1].label,
         url: this.temp.url,
         target: this.temp.isextype ? 'explanation' : 'word',
-        type: this.temp.isextype,
+        isextype: this.temp.isextype,
         layerlabel: layerlabel,
         layer: this.temp.layer
       });
+      this.disabled_create_button = false;
     },
     deleteRow(index, rows) {
       rows.splice(index, 1);
+      if (this.table_data.length === 0) {
+        this.disabled_create_button = true;
+      }
+    },
+    changedShowAnswer(show) {
+      this.$store.commit('changedShowAnswer', show);
+    },
+    createDocument() {
+      this.fullscreen_loading = true;
+      this.drawer = false;
+      this.$store.dispatch('createDocument', this.table_data).then(() => {
+        this.exist_document = true;
+        this.fullscreen_loading = false;
+        console.log(this.questions);
+      });
     }
   }
 };
@@ -244,6 +275,16 @@ export default {
   position: fixed;
   top: 20px;
   left: 20px;
+}
+#answer_switch {
+  position:fixed;
+  top: 20px;
+  right: 20px;
+  background-color: white;
+  border-radius: 4px;
+  padding: 9px 18px;
+  color: #505050;
+  font-size: 0.9em;
 }
 #setting {
   padding: 0px 20px;

@@ -1,19 +1,19 @@
 [
   {
     "isnumeric": false,
-    "x": 10,
+    "x": 1,
     "explanation": "explanation",
     "img": 0,
     "children": [
       {
         "isnumeric": true,
-        "x": 10,
+        "x": 2,
         "explanation": "explanation",
         "img": 0,
         "children": [
           {
             "isnumeric": false,
-            "x": 10,
+            "x": 3,
             "explanation": "explanation",
             "img": 0,
             "children": []
@@ -24,13 +24,13 @@
   },
   {
     "isnumeric": true,
-    "x": 10,
+    "x": 4,
     "explanation": "explanation",
     "img": 0,
     "children": [
       {
         "isnumeric": true,
-        "x": 10,
+        "x": 5,
         "explanation": "explanation",
         "img": 0,
         "children": []
