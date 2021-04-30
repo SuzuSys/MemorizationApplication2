@@ -1,6 +1,7 @@
 <template>
   <div>
-    <vue-mathjax :formula="formula"></vue-mathjax>
+    <p>{{ x }}</p>
+    <vue-mathjax :formula="x"></vue-mathjax>
   </div>
 </template>
 
@@ -13,16 +14,15 @@ export default {
   name: 'Question',
   data () {
     return {
-      
-    }
-  },
-  props: {
-    formula: {
-      type: String
+      x: '$x$'
     }
   }
 }
 </script>
 
 <style scoped>
+@font-face {
+  font-family: 'SevenSegment';
+  src: url('../../font/7 Segment.ttf') format('truetype');
+}
 </style>

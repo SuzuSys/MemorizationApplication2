@@ -109,7 +109,7 @@
           <code v-show="!show_answer">Question Sheet</code>
         </div>
         <div id="title"><code>{{ title }}</code></div>
-        <header>Memorization Sheet</header>
+        <header>-Memorization Sheet-</header>
         <div class="information">
           <el-row>
             <el-col :span="3"><code>content:</code></el-col><el-col :span="21"><code>{{ first_content }}</code></el-col>
@@ -121,7 +121,9 @@
             <el-col :span="3"><code>shuffle:</code></el-col><el-col :span="21"><code>{{ shuffle }}</code></el-col>
           </el-row>
         </div>
-        <Question formula="$x$"/>
+        <div id="main" v-if="generate_questions">
+          <Question v-for="(item, index) in questions" :key="index" />
+        </div>
       </div>
     </div>
   </div>
@@ -152,14 +154,15 @@ export default {
       show_label: false,
       disabled_add_button: true,
       table_data: [],
-      questions: this.$store.state.questions,
+      questions: [],
       exist_document: false,
       show_answer: false,
       fullscreen_loading: false,
       disabled_create_button: true,
       first_content: '',
       contents: [],
-      title: ''
+      title: '',
+      generate_questions: false
     }
   },
   computed: {
@@ -282,9 +285,12 @@ export default {
           this.contents.push(this.table_data[i].content);
         }
       }
+      this.generate_questions = false;
       this.$store.dispatch('createDocument', this.table_data).then(() => {
         this.$store.commit('shuffleQuestions');
+        this.questions = this.$store.state.questions;
         this.exist_document = true;
+        this.generate_questions = true;
         this.fullscreen_loading = false;
       });
     }
@@ -293,9 +299,13 @@ export default {
 </script>
 
 <style>
+@font-face {
+  font-family: 'SevenSegment';
+  src: url('../font/7 Segment.ttf') format('truetype');
+}
 header {
   text-align: center;
-  font-family: note monospace,SFMono-Regular,Consolas,Menlo,Courier,monospace;
+  font-family: SevenSegment;
   font-size: 5em;
 }
 #app {
