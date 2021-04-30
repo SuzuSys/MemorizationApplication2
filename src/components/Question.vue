@@ -1,7 +1,7 @@
 <template>
   <div>
-    <p>{{ x }}</p>
     <vue-mathjax :formula="x"></vue-mathjax>
+    <p>{{ x }}</p>
   </div>
 </template>
 
@@ -14,8 +14,10 @@ export default {
   name: 'Question',
   data () {
     return {
-      x: '$x$'
     }
+  },
+  props: {
+    x: String
   }
 }
 </script>

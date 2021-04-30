@@ -122,7 +122,7 @@
           </el-row>
         </div>
         <div id="main" v-if="generate_questions">
-          <Question v-for="(item, index) in questions" :key="index" />
+          <Question v-for="(item, index) in questions" :key="index" :x="item.x" />
         </div>
       </div>
     </div>
