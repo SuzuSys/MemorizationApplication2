@@ -7,6 +7,10 @@
           Add Sheet
       </el-button>
     </div>
+    <div id="answer_switch" v-show="exist_document">
+      Answer:
+      <el-switch @change="changedShowAnswer" v-model="show_answer" />
+    </div>
     <el-drawer
       title="Add Sheet"
       :with-header="false"
@@ -62,8 +66,8 @@
           </el-row>
         </div>
         <el-divider content-position="left">Added Sheet</el-divider>
-        <el-table :data="table_data" style="width:100%" empty-text="No Sheet">
-          <el-table-column prop="content" label="Content" width="300" />
+        <el-table :data="table_data" style="width:100%" empty-text="No Sheet" max-height="180">
+          <el-table-column prop="content" label="Content" width="280" />
           <el-table-column prop="target" label="Target" width="100" />
           <el-table-column prop="layerlabel" label="Layer" width="70" />
           <el-table-column label="Operation" width="120">
@@ -78,12 +82,20 @@
             </template>
           </el-table-column>
         </el-table>
+        <p>
+          Discriminated Title:
+          <el-input v-model="title" placeholder="Type something" />
+        </p>
         <el-row>
           <el-col :span="12">
             Shuffle: <el-switch v-model="shuffle" />
           </el-col>
           <el-col :span="12" class="right">
-            <el-button icon="el-icon-right">
+            <el-button
+              icon="el-icon-right"
+              @click="createDocument"
+              v-loading.fullscreen.lock="fullscreen_loading"
+              :disabled="disabled_create_button">
               Create Document
             </el-button>
           </el-col>
@@ -91,7 +103,38 @@
       </div>
     </el-drawer>
     <div id="sheet">
-      <Question formula="$x$"/>
+      <div v-show="exist_document">
+        <div id="sheet_type" :class="{sheet_type_answer: show_answer, sheet_type_question: !show_answer}">
+          <code v-show="show_answer">Answer Sheet</code>
+          <code v-show="!show_answer">Question Sheet</code>
+        </div>
+        <div id="title"><code>{{ title }}</code></div>
+        <header>-Memorization Sheet-</header>
+        <div class="information">
+          <el-row>
+            <el-col :span="3"><code>content:</code></el-col><el-col :span="21"><code>{{ first_content }}</code></el-col>
+          </el-row>
+          <el-row v-for="(item, index) in contents" :key="index">
+            <el-col :offset="3" :span="21"><code>{{ item }}</code></el-col>
+          </el-row>
+          <el-row>
+            <el-col :span="3"><code>shuffle:</code></el-col><el-col :span="21"><code>{{ shuffle }}</code></el-col>
+          </el-row>
+        </div>
+        <div id="main" v-if="generate_questions">
+          <Question
+            v-for="(item, index) in questions"
+            :key="index"
+            :idx="index"
+            :digit="String(questions.length).length"
+            :x="item.x"
+            :y="item.y"
+            :x_class="item.x_class"
+            :y_class="item.y_class"
+            :isextype="item.isextype"
+            :show_answer="show_answer" />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -120,7 +163,16 @@ export default {
       browse_loading: false,
       show_label: false,
       disabled_add_button: true,
-      table_data: []
+      table_data: [],
+      questions: [],
+      exist_document: false,
+      show_answer: false,
+      fullscreen_loading: false,
+      disabled_create_button: true,
+      first_content: '',
+      contents: [],
+      title: '',
+      generate_questions: false
     }
   },
   computed: {
@@ -218,23 +270,59 @@ export default {
         content: this.temp.sheet[this.temp.sheet.length - 1].label,
         url: this.temp.url,
         target: this.temp.isextype ? 'explanation' : 'word',
-        type: this.temp.isextype,
+        isextype: this.temp.isextype,
         layerlabel: layerlabel,
         layer: this.temp.layer
       });
+      this.disabled_create_button = false;
     },
     deleteRow(index, rows) {
       rows.splice(index, 1);
+      if (this.table_data.length === 0) {
+        this.disabled_create_button = true;
+      }
+    },
+    changedShowAnswer(show) {
+      this.$store.commit('changedShowAnswer', show);
+    },
+    createDocument() {
+      this.fullscreen_loading = true;
+      this.drawer = false;
+      this.first_content = this.table_data[0].content;
+      this.contents = [];
+      if (this.table_data.length > 1) {
+        for (let i = 1; i < this.table_data.length; i++) {
+          this.contents.push(this.table_data[i].content);
+        }
+      }
+      this.generate_questions = false;
+      this.$store.dispatch('createDocument', this.table_data).then(() => {
+        if (this.shuffle) this.$store.commit('shuffleQuestions');
+        this.questions = this.$store.state.questions;
+        this.exist_document = true;
+        this.generate_questions = true;
+        this.fullscreen_loading = false;
+      });
     }
   }
 };
 </script>
 
 <style>
+@font-face {
+  font-family: 'SevenSegment';
+  src: url('../font/7 Segment.ttf') format('truetype');
+}
+header {
+  text-align: center;
+  font-family: SevenSegment;
+  font-size: 5em;
+}
 #app {
   margin: 0px;
 }
 #sheet {
+  position: relative;
   width: 793px;
   margin: auto;
   background-color: white;
@@ -245,21 +333,68 @@ export default {
   top: 20px;
   left: 20px;
 }
+#answer_switch {
+  position:fixed;
+  top: 20px;
+  right: 20px;
+  background-color: white;
+  border-radius: 4px;
+  padding: 9px 18px;
+  color: #505050;
+  font-size: 0.9em;
+}
 #setting {
   padding: 0px 20px;
   color: #505050;
 }
-.el-row {
+.el-row:not(.information .el-row, #main .el-row) {
   margin-top: 10px;
 }
 .right {
   text-align: right;
+}
+code {
+  font-family: note monospace,SFMono-Regular,Consolas,Menlo,Courier,monospace;
+  color: steelblue;
+}
+#sheet_type {
+  position: absolute;
+  top: 5px;
+  right: 10px;
+  display: inline-block;
+  border-radius: 5px;
+  padding: 3px 10px;
+}
+.sheet_type_question {
+  background-color: #409EFF;
+}
+.sheet_type_answer {
+  background-color: #67C23A;
+}
+#sheet_type code {
+  color: white;
+}
+#title {
+  position: absolute;
+  top: 10px;
+  left: 0px;
+  width: 868px;
+  text-align: center;
+}
+#title code {
+  border-left: double black 10px;
+  border-right: double black 10px;
+  padding: 0px 10px;
+  color: black;
 }
 @media print {
   #setting_button {
     display: none;
   }
   #setting {
+    display: none;
+  }
+  #answer_switch {
     display: none;
   }
 }
