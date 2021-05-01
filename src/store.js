@@ -49,7 +49,8 @@ const store = new Vuex.Store({
       ctx.commit('emptyDocument');
       for (let i = 0; i < table_data.length; i++) {
         let td = table_data[i];
-        await ctx.dispatch('createQuestion', {url: td.url, isextype: td.isextype, layer: td.layer});
+        console.log(i+'start');
+        await ctx.dispatch('createQuestion', {url: td.url, isextype: td.isextype, layer: td.layer}).then(() => console.log(i + 'finish'));
       }
     },
     async createQuestion (ctx, payload) {

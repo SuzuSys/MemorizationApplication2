@@ -122,7 +122,17 @@
           </el-row>
         </div>
         <div id="main" v-if="generate_questions">
-          <Question v-for="(item, index) in questions" :key="index" :x="item.x" />
+          <Question
+            v-for="(item, index) in questions"
+            :key="index"
+            :idx="index"
+            :digit="String(questions.length).length"
+            :x="item.x"
+            :y="item.y"
+            :x_class="item.x_class"
+            :y_class="item.y_class"
+            :isextype="item.isextype"
+            :show_answer="show_answer" />
         </div>
       </div>
     </div>
@@ -287,7 +297,7 @@ export default {
       }
       this.generate_questions = false;
       this.$store.dispatch('createDocument', this.table_data).then(() => {
-        this.$store.commit('shuffleQuestions');
+        if (this.shuffle) this.$store.commit('shuffleQuestions');
         this.questions = this.$store.state.questions;
         this.exist_document = true;
         this.generate_questions = true;
@@ -337,7 +347,7 @@ header {
   padding: 0px 20px;
   color: #505050;
 }
-.el-row:not(.information .el-row) {
+.el-row:not(.information .el-row, #main .el-row) {
   margin-top: 10px;
 }
 .right {
