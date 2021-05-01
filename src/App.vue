@@ -185,10 +185,11 @@ export default {
       this.browse_loading = true;
       this.temp.available_layers = [];
       this.temp.layer = 'Select Layer';
-      this.temp.url = '';
+      this.temp.url = './json/';
       for (let i = 0; i < this.temp.sheet.length; i++) {
         this.temp.url += this.temp.sheet[i].url + '/';
       }
+      console.log(this.temp.url)
       this.$store.dispatch('lookJson', this.temp.url).then(() => {
         let position = this.$store.state.temp.json;
         let history = [];
