@@ -16,3 +16,5 @@ vue-mathjax
 Element-UI  
 vuex  
 axios
+## Font
+[Seven Segment](https://fontmeme.com/jfont/seven-segment-font/)
