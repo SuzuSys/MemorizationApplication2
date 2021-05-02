@@ -12,10 +12,20 @@
     <el-row>
       <el-col :offset="1" :span="23">
         <el-row>
-          <el-col class="question" :span="23"><vue-mathjax :formula="x"></vue-mathjax></el-col>
+          <el-col class="question" :span="24">
+            <span v-for="(item, index) in (isextype ? formated_x : formated_y)" :key="index">
+              <span v-html="item.sentence"></span>
+              <vue-mathjax :formula="item.math"></vue-mathjax>
+            </span>
+          </el-col>
         </el-row>
-        <el-row>
-          <el-col class="answer" :span="23" v-show="show_answer"><vue-mathjax :formula="y"></vue-mathjax></el-col>
+        <el-row v-show="show_answer">
+          <el-col class="answer" :span="24">
+            <span v-for="(item, index) in (isextype ? formated_y : formated_x)" :key="index">
+              <span v-html="item.sentence"></span>
+              <vue-mathjax :formula="item.math"></vue-mathjax>
+            </span>
+          </el-col>
         </el-row>
       </el-col>
     </el-row>
@@ -31,6 +41,8 @@ export default {
   name: 'Question',
   data () {
     return {
+      formated_x: [],
+      formated_y: []
     }
   },
   props: {
@@ -50,6 +62,61 @@ export default {
         str = '0' + str;
       }
       return str;
+    }
+  },
+  created: function() {
+    const wrap = [
+      {input: this.x, output: this.formated_x},
+      {input: this.y, output: this.formated_y}
+    ];
+    for (let i = 0; i < wrap.length; i++) {
+      let target = wrap[i];
+      let tempobj = {sentence: '', math: ''};
+      let divider = 0;
+      let out = true;
+      let neglect = false;
+      for (let j = 0; j < target.input.length; j++) {
+        if (neglect) {
+          neglect = false;
+        }
+        else if (target.input[j] === '$') {
+          if (out) {
+            if (divider !== j) {
+              tempobj.sentence = target.input.slice(divider, j);
+              divider = j;
+            }
+            out = false;
+            neglect = true;
+          }
+          else {
+            if (j === target.input.length - 1) {
+              tempobj.math = target.input.slice(divider);
+            }
+            else if (target.input[j + 1] === '$') {
+              if (j + 1 === target.input.length) {
+                tempobj.math = target.input.slice(divider)
+              }
+              else {
+                tempobj.math = target.input.slice(divider, j + 2);
+                divider = j + 2;
+                out = true;
+              }
+            }
+            else {
+              tempobj.math = target.input.slice(divider, j + 1);
+              divider = j + 1;
+              out = true;
+            }
+            target.output.push(tempobj);
+            tempobj = {sentence: '', math: ''};
+            neglect = true;
+          }
+        }
+      }
+      if (out) {
+        tempobj.sentence = target.input.slice(divider);
+        target.output.push(tempobj);
+      }
     }
   }
 }

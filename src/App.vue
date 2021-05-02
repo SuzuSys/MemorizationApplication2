@@ -189,7 +189,6 @@ export default {
       for (let i = 0; i < this.temp.sheet.length; i++) {
         this.temp.url += this.temp.sheet[i].url + '/';
       }
-      console.log(this.temp.url)
       this.$store.dispatch('lookJson', this.temp.url).then(() => {
         let position = this.$store.state.temp.json;
         let history = [];
