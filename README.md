@@ -13,8 +13,9 @@ Latex, 画像も表示できる。
 Vue2
 ## Plugin
 vue-mathjax  
-Element-UI  
-vuex  
-axios
+Element UI  
+Vuex  
+Axios
+Vue Router
 ## Font
 [Seven Segment](https://fontmeme.com/jfont/seven-segment-font/)
