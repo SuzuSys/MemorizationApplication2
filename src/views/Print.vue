@@ -1,15 +1,32 @@
 <template>
   <div id="app">
-    <div id="setting_button">
+    <div id="top_left_ui">
       <el-button 
         icon="el-icon-notebook-2"
         @click="drawer=true">
           Add Sheet
       </el-button>
     </div>
-    <div id="answer_switch" v-show="exist_document">
-      Answer:
-      <el-switch @change="changedShowAnswer" v-model="show_answer" />
+    <div id="bottom_left_ui">
+      <el-button
+        icon="el-icon-d-arrow-left"
+        @click="goTop">
+          Top Page
+      </el-button>
+    </div>
+    <div id="top_right_ui" v-show="exist_document">
+      <div id="answer_switch">
+        Answer:
+        <el-switch @change="changedShowAnswer" v-model="show_answer" />
+      </div>
+    </div>
+    <div id="bottom_right_ui" v-show="exist_document">
+      <el-button
+        icon="el-icon-check"
+        @click="documentPrint"
+        type="primary">
+        Print
+      </el-button>
     </div>
     <el-drawer
       title="Add Sheet"
@@ -133,6 +150,14 @@
             :y_class="item.y_class"
             :isextype="item.isextype"
             :show_answer="show_answer" />
+          <el-divider></el-divider>
+        </div>
+        <div id="footer">
+          <div id="logo_container">
+            <img src="@/assets/logoprint.svg" width="250" height="250">
+            <p>made with <span id="appname">Memorization Application</span></p>
+            <p id="url">https://github.com/SuzuSys/MemorizationApplication2</p>
+          </div>
         </div>
       </div>
     </div>
@@ -303,6 +328,19 @@ export default {
         this.generate_questions = true;
         this.fullscreen_loading = false;
       });
+    },
+    documentPrint() {
+      window.print();
+    },
+    goTop() {
+      if (this.exist_document) {
+        if (window.confirm('ドキュメント内容は保存されませんがよろしいですか？')) {
+          this.$router.push({ path: '/' });
+        }
+      }
+      else {
+        this.$router.push({ path: '/' });
+      }
     }
   }
 };
@@ -317,6 +355,7 @@ header {
   text-align: center;
   font-family: SevenSegment;
   font-size: 5em;
+  margin-top: 15px;
 }
 #app {
   margin: 0px;
@@ -328,20 +367,40 @@ header {
   background-color: white;
   padding: 10mm;
 }
-#setting_button {
+#top_left_ui {
   position: fixed;
   top: 20px;
   left: 20px;
+  width: 140px;
+  text-align: center;
 }
-#answer_switch {
+#top_right_ui {
   position:fixed;
   top: 20px;
   right: 20px;
+  width: 140px;
+  text-align: center;
+}
+#answer_switch {
   background-color: white;
   border-radius: 4px;
-  padding: 9px 18px;
+  padding: 10px 18px;
   color: #505050;
   font-size: 0.9em;
+}
+#bottom_left_ui {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  width: 140px;
+  text-align: center;
+}
+#bottom_right_ui {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 140px;
+  text-align: center;
 }
 #setting {
   padding: 0px 20px;
@@ -360,7 +419,7 @@ code {
 #sheet_type {
   position: absolute;
   top: 5px;
-  right: 10px;
+  right: 20px;
   display: inline-block;
   border-radius: 5px;
   padding: 3px 10px;
@@ -376,7 +435,7 @@ code {
 }
 #title {
   position: absolute;
-  top: 10px;
+  top: 5px;
   left: 0px;
   width: 868px;
   text-align: center;
@@ -386,6 +445,37 @@ code {
   border-right: double black 10px;
   padding: 0px 10px;
   color: black;
+}
+#logo_container {
+  display: inline-block;
+  position: relative;
+  width: 800px;
+  height: 140px;
+}
+#logo_container img {
+  position: absolute;
+  top: -50px;
+  left: 0px;
+}
+#logo_container p:not(#url) {
+  position: absolute;
+  top: 25px;
+  left: 250px;
+  font-size: 1.5em;
+  font-family: serif;
+}
+#logo_container #appname {
+  font-size: 1.2em;
+  font-variant: small-caps;
+  font-weight: bold;
+}
+#logo_container #url {
+  position: absolute;
+  top: 70px;
+  left: 250px;
+  font-family: note monospace,SFMono-Regular,Consolas,Menlo,Courier,monospace;
+  font-size: 1em;
+  text-decoration: underline;
 }
 @media print {
   #setting_button {

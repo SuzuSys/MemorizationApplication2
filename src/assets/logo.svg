@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 100 100">
+  <marker orient="auto" id="mk" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="10" markerHeight="10">
+    <polygon points="1,2 9,5 1,8" fill="white"></polygon>
+  </marker>
+  <marker id="mk180" orient="180" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="10" markerHeight="10">
+    <polygon points="1,2 9,5 1,8" fill="white"></polygon>
+  </marker>
+  <g stroke="white">
+    <g stroke-width="0.5">
+      <line x1="40" y1="50" x2="40" y2="80"></line>
+      <line x1="55" y1="70" x2="55" y2="80"></line>
+    </g>
+    <g fill="none">
+      <path d="M 55,30 A 40,40 60 0 1 90,50 A 40,40 60 0 1 55,70 L 34.6,70 A 40,40 60 0 0 34.6,30 L 55,30" id="p"></path>
+      <g stroke-width="0.5">
+        <path id="arrow1" d="M 0,50 L 35,39" marker-end="url(#mk)"></path>
+        <path id="arrow2" d="M 42,78 L 53,78" marker-start="url(#mk180)" marker-end="url(#mk)"></path>
+        <path id="arrow3" d="M 55,70 L 82,43" marker-end="url(#mk)"></path>
+      </g>
+    </g>
+  </g>
+  <circle cx="0" cy="0" r="2" fill="white">
+      <animateMotion dur="10s" repeatCount="indefinite">
+          <mpath xlink:href="#p"/>
+      </animateMotion>
+  </circle>
+  <g font-size="6" fill="white">
+    <text dx="18" dy="-1" text-anchor="middle" font-family="serif">
+      <textPath xlink:href="#arrow1">0.80R</textPath>
+    </text>
+    <text dy="-2" font-family="serif">
+      <textPath xlink:href="#arrow2">0.30</textPath>
+    </text>
+    <text dx="19" dy="-1" text-anchor="middle" font-family="serif">
+      <textPath xlink:href="#arrow3">0.80R</textPath>
+    </text>
+  </g>
+</svg>
