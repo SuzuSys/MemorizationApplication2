@@ -15,7 +15,7 @@ Vue2
 vue-mathjax  
 Element UI  
 Vuex  
-Axios
+Axios  
 Vue Router
 ## Font
 [Seven Segment](https://fontmeme.com/jfont/seven-segment-font/)
