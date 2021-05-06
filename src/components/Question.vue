@@ -129,6 +129,7 @@ export default {
 }
 #entire {
   margin: 10px;
+  break-inside: avoid-page;
 }
 p {
   margin: 0px;
