@@ -5,6 +5,7 @@ import axios from 'axios'
 Vue.use(Vuex)
 
 import linking from './assets/linking.json'
+import Methods from './api/methods'
 const store = new Vuex.Store({
   state: {
     linking: linking,
@@ -99,6 +100,10 @@ const store = new Vuex.Store({
     },
     async returnJson (ctx, url) {
       await axios.get(url).then(res => ctx.commit('setInteriorTempJson', res.data));
+    },
+    async getData () {
+      let names_data = await Methods.getNamesData();
+      console.log(names_data);
     }
   }
 })
