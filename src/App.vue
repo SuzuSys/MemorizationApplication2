@@ -57,7 +57,6 @@ export default ({
   },
   created: function() {
     if (this.$route.fullPath === '/') this.show_top = true;
-    this.$store.dispatch('getData');
   }
 })
 </script>

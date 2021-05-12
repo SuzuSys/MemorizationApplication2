@@ -102,8 +102,13 @@ const store = new Vuex.Store({
       await axios.get(url).then(res => ctx.commit('setInteriorTempJson', res.data));
     },
     async getData () {
-      let names_data = await Methods.getNamesData();
-      console.log(names_data);
+      return await Methods.getNamesData();
+    },
+    async postData (ctx, data) {
+      return await Methods.postNamesData(data);
+    },
+    async deleteData (ctx, id_obj) {
+      return await Methods.deleteNamesData(id_obj);
     }
   }
 })
