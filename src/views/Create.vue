@@ -30,7 +30,7 @@ export default {
       })
     },
     postData() {
-      this.$store.dispatch('postData', {name: 'Kiyoshi'}).then(res => {
+      this.$store.dispatch('postData', {name: 'DirectoryName'}).then(res => {
         console.log(res.status);
       })
     },
