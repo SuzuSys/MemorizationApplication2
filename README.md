@@ -12,15 +12,19 @@
 ![木構造](https://user-images.githubusercontent.com/73921483/118429043-c0142100-b70b-11eb-9b16-ace9ebf9ef79.png)  
 このアプリは、ユーザーがデータを木構造として入力してもらい、その木構造をlayerに区切り、layerごとに暗記シートを生成する。  
 Latex, 画像も表示可能。  
+(下の画像から次のような暗記シートを生成する:「X: 分子の説明」「X: 分子という単語を使った高分子化合物の説明」「X: 高分子化合物という単語を使ったタンパク質の説明, Y: 高分子化合物という単語を使ったプラスチックの説明」「X: タンパク質という単語を使ったアミノ酸の説明」)
 ![Layer分け](https://user-images.githubusercontent.com/73921483/118429074-d28e5a80-b70b-11eb-9d3c-69991b164dc3.png)  
+全体像は次のとおり。  
+![全体像](https://user-images.githubusercontent.com/73921483/118439930-daf19000-b721-11eb-8296-2cca76929e2b.png)
 UI画面は以下のようになっている。  
 ![選択画面](https://user-images.githubusercontent.com/73921483/118431870-3d429480-b712-11eb-9d0f-4054829724e3.png)  
 ![question](https://user-images.githubusercontent.com/73921483/118431878-42074880-b712-11eb-976d-6138705396eb.png)  
 ![answer](https://user-images.githubusercontent.com/73921483/118431891-4a5f8380-b712-11eb-8c7a-21bf6ac5754f.png)  
 
-## Framework
-Vue.js(Vue2)
+## Environment
 Node.js  
+## Framework
+Vue.js(Vue2)  
 ## Database
 MongoDB  
 ## Plugin
