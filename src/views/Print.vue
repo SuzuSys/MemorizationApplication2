@@ -168,7 +168,7 @@
 import Question from "../components/Question";
 
 export default {
-  name: "Print",
+  name: 'Print',
   components: {
     Question
   },
@@ -182,7 +182,7 @@ export default {
         url: '',
         isextype: false,
         available_layers: [],
-        layer: "Select Layer"
+        layer: 'Select Layer'
       },
       browse_button: true,
       browse_loading: false,

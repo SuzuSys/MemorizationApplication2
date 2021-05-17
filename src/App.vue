@@ -48,12 +48,8 @@ export default ({
       this.$router.push({ path: '/create' });
     },
     goHistory: function() {
-      if (this.$route.path === '/') {
-        this.show_top = true;
-      }
-      else {
-        this.show_top = false;
-      }
+      if (this.$route.path === '/') this.show_top = true;
+      else this.show_top = false;
     }
   },
   watch: {
