@@ -1,6 +1,10 @@
 body {
-  margin: 8px 0px;
+  margin: 0px;
   background-color: #282828;
+}
+.el-textarea__inner, .el-input__inner {
+  font-family:"Microsoft";
+  font-size:20px;
 }
 
 @media print {

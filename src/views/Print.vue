@@ -149,7 +149,8 @@
             :x_class="item.x_class"
             :y_class="item.y_class"
             :isextype="item.isextype"
-            :show_answer="show_answer" />
+            :show_answer="show_answer"
+            :alone="false" />
           <el-divider></el-divider>
         </div>
         <div id="footer">
@@ -346,7 +347,7 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 @font-face {
   font-family: 'SevenSegment';
   src: url('../../font/7 Segment.ttf') format('truetype');
@@ -354,15 +355,15 @@ export default {
 header {
   text-align: center;
   font-family: SevenSegment;
-  font-size: 5em;
+  font-size: 4.5em;
   margin-top: 15px;
 }
 #app {
-  margin: 0px;
+  margin: 8px 0px;
 }
 #sheet {
   position: relative;
-  width: 793px;
+  width: calc(793px - 2 * 10mm);
   margin: auto;
   background-color: white;
   padding: 10mm;
@@ -437,7 +438,7 @@ code {
   position: absolute;
   top: 5px;
   left: 0px;
-  width: 868px;
+  width: calc(793px + 10mm);
   text-align: center;
 }
 #title code {
@@ -478,13 +479,16 @@ code {
   text-decoration: underline;
 }
 @media print {
-  #setting_button {
+  #top_left_ui {
     display: none;
   }
-  #setting {
+  #top_right_ui {
     display: none;
   }
-  #answer_switch {
+  #bottom_left_ui {
+    display: none;
+  }
+  #bottom_right_ui {
     display: none;
   }
 }

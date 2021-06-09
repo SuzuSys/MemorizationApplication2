@@ -29,6 +29,7 @@
         </el-row>
       </el-col>
     </el-row>
+    <el-divider v-if="alone"></el-divider>
   </div>
 </template>
 
@@ -53,7 +54,8 @@ export default {
     x_class: String,
     y_class: String,
     isextype: Boolean,
-    show_answer: Boolean
+    show_answer: Boolean,
+    alone: Boolean
   },
   computed: {
     idxFormat: function() {
@@ -143,6 +145,10 @@ p {
   display: inline-block;
   width: 25px;
   text-align: right;
+}
+code {
+  font-family: note monospace,SFMono-Regular,Consolas,Menlo,Courier,monospace;
+  color: steelblue;
 }
 .el-divider {
   margin-top: 5px;

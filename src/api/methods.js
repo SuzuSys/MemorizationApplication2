@@ -1,25 +1,69 @@
 import Api from "./index";
-/*
+
 export default {
-  getNamesData() {
-    return Api().get("/test");
+  async getDirectoryTree() {
+    // require bool of is_migrating
+    let obj = {};
+    obj.want = "directoryTree";
+    return await Api().get("/MemorizationApplication", {params: obj});
   },
-  postNamesData(data) {
-    return Api().post("/test", data);
+  async getCellTree(parentDirectory) {
+    // require a _id of parentDirectory
+    let obj = {};
+    obj.want = "cellTree";
+    obj.parentDirectory = parentDirectory;
+    return await Api().get("/MemorizationApplication", {params: obj});
   },
-  deleteNamesData(id_obj) {
-    return Api().delete("/test", {data: id_obj});
-  }
-}
-*/
-export default {
-  getSheetsData() {
-    return Api().get("/MemorizationApplication");
+  async addDirectory(data) {
+    // require key 'type', 'name' (require key 'parent' in case of type !== 'r')
+    data.isAdd = true;
+    data.isDirectory = true;
+    return await Api().post("/MemorizationApplication", data);
   },
-  postSheetsData(data) {
-    return Api().post("/MemorizationApplication", data);
+  async addRootCell(data) {
+    // require key 'parentDirectory', 'label', 'isnumerical', 'x', 'x_class', 'y', 'y_class', ('img')
+    data.isAdd = true;
+    data.isDirectory = false;
+    data.isRoot = true;
+    return await Api().post("/MemorizationApplication", data);
   },
-  deleteSheetsData(id_obj) {
-    return Api().delete("/MemorizationApplication", {data: id_obj});
+  async addNodeCell(data) {
+    // require key 'parentDirectory', 'label', 'parent', 'isnumerical', 'x', 'x_class', 'y', 'y_class', ('img')
+    data.isAdd = true;
+    data.isDirectory = false;
+    data.isRoot = false;
+    return await Api().post("/MemorizationApplication", data);
+  },
+  async renameDirectory(data) {
+    // require key 'id' 'name'
+    data.isAdd = false;
+    data.isDirectory = true;
+    data.want = 'rename';
+    return await Api().post("/MemorizationApplication", data);
+  },
+  async migrateDirectory(data) {
+    // require key 'id', 'to'
+    data.isAdd = false;
+    data.isDirectory = true;
+    data.want = 'migrate';
+    return await Api().post("/MemorizationApplication", data);
+  },
+  async correctCell(data) {
+    // require key 'parentDirectory', 'id','label', 'isnumerical', 'x', 'x_class', 'y', 'y_class', ('img')
+    data.isAdd = false;
+    data.isDirectory = false;
+    data.want = 'correct';
+    return await Api().post("/MemorizationApplication", data);
+  },
+  async deleteDirectory(data) {
+    // require key 'id'
+    data.isDirectory = true;
+    return await Api().delete("/MemorizationApplication", {data: data});
+  },
+  async deleteCell(data) {
+    // require key 'id', 'parentDirectory'
+    // require that target's children is empty
+    data.isDirectory = false;
+    return await Api().delete("/MemorizationApplication", {data: data});
   }
 }

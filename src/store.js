@@ -5,7 +5,6 @@ import axios from 'axios'
 Vue.use(Vuex)
 
 import linking from './assets/linking.json'
-import Methods from './api/methods'
 const store = new Vuex.Store({
   state: {
     linking: linking,
@@ -16,7 +15,10 @@ const store = new Vuex.Store({
     show_answer: false,
     interior_temp: {
       json: []
-    }
+    },
+
+
+    directory_tree: []
   },
   mutations: {
     setTempJson (state, payload) {
@@ -40,6 +42,9 @@ const store = new Vuex.Store({
         const j = Math.floor(Math.random() * (i + 1));
         [array[i], array[j]] = [array[j], array[i]];
       }
+    },
+    updateDirectoryTree (state, payload) {
+      state.directory_tree = payload.data;
     }
   },
   actions: {
@@ -100,15 +105,6 @@ const store = new Vuex.Store({
     },
     async returnJson (ctx, url) {
       await axios.get(url).then(res => ctx.commit('setInteriorTempJson', res.data));
-    },
-    async getData () {
-      return await Methods.getSheetsData();
-    },
-    async postData (ctx, data) {
-      return await Methods.postSheetsData(data);
-    },
-    async deleteData (ctx, id_obj) {
-      return await Methods.deleteSheetsData(id_obj);
     }
   }
 })
