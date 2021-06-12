@@ -14,6 +14,11 @@ export default {
     obj.parentDirectory = parentDirectory;
     return await Api().get("/MemorizationApplication", {params: obj});
   },
+  async getCellLayer(obj) {
+    // require key 'parentDirectory', 'isextype'
+    obj.want = "cellLayer";
+    return await Api().get("/MemorizationApplication", {params: obj});
+  },
   async addDirectory(data) {
     // require key 'type', 'name' (require key 'parent' in case of type !== 'r')
     data.isAdd = true;

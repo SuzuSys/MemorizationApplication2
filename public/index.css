@@ -6,6 +6,10 @@ body {
   font-family:"Microsoft";
   font-size:20px;
 }
+code {
+  font-family: note monospace,SFMono-Regular,Consolas,Menlo,Courier,monospace;
+  color: steelblue;
+}
 
 @media print {
   body {

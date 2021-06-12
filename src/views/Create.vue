@@ -1,6 +1,7 @@
 <template>
   <div>
     <el-container id="top">
+      <el-button icon="el-icon-d-arrow-left" id="go_top" @click="goTop">Top Page</el-button>
       <el-aside width="400px">
         <el-row>
           <el-col :span="24">
@@ -380,11 +381,22 @@
                 <el-button 
                   type="danger"
                   plain icon="el-icon-delete"
-                  @click="deleteDirectory">
+                  @click="deleteDirectoryDialog">
                     Delete Directory
                   </el-button>
               </el-col>
             </el-row>
+            <el-dialog
+              title="Warning"
+              :visible.sync="delete_directory_dialog"
+              width="30%"
+              center>
+              <span>この Leaf Directory 配下の全ての Cell が削除されます。よろしいですか？</span>
+              <span slot="footer" class="dialog-footer">
+                <el-button @click="delete_directory_dialog = false">Cancel</el-button>
+                <el-button type="primary" @click="deleteDirectory">Confirm</el-button>
+              </span>
+            </el-dialog>
           </div>
         </div>
       </el-main>
@@ -433,6 +445,8 @@ export default {
         checkStrictly: true
       },
       show_migrating_directory_tree: true,
+
+      delete_directory_dialog: false,
 
       active_cell_mode: '',
 
@@ -630,7 +644,12 @@ export default {
         }
       });
     },
+    deleteDirectoryDialog() {
+      if (this.directory_target_type === 'l') this.delete_directory_dialog = true;
+      else this.deleteDirectory();
+    },
     deleteDirectory() {
+      this.delete_directory_dialog = false;
       let obj = {id: this.directory_target_id};
       Database.deleteDirectory(obj).then(result => {
         if (result.status === 200) {
@@ -773,6 +792,9 @@ export default {
     },
     reloadQuestionForCorrect() {
       this.reload_question_key_for_correct++;
+    },
+    goTop() {
+      this.$router.push({ path: '/' });
     }
   },
   created: async function () {
@@ -825,5 +847,10 @@ export default {
 }
 .cell_n {
   color: #409EFF
+}
+#go_top {
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
 }
 </style>

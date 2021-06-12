@@ -26,12 +26,17 @@ async function DirectoryToObject(obj) {
   let piece = {label: obj.name, value: obj};
   if (obj.type === 'l') {
     piece.isleaf = true;
-  }
-  else if (obj.children.length !== 0) {
-    piece.children = [];
-    for (let i = 0; i < obj.children.length; i++) {
-      let child = await Directory.findOne({_id: obj.children[i]}).exec();
-      piece.children.push(await DirectoryToObject(child));
+    piece.isnotleaf = false;
+  } 
+  else {
+    piece.isleaf = false;
+    piece.isnotleaf = true;
+    if (obj.children.length !== 0) {
+      piece.children = [];
+      for (let i = 0; i < obj.children.length; i++) {
+        let child = await Directory.findOne({_id: obj.children[i]}).exec();
+        piece.children.push(await DirectoryToObject(child));
+      }
     }
   }
   return piece;
@@ -72,8 +77,8 @@ app.get("/MemorizationApplication", (req, res) => {
             res.json(tree);
             break;
           case 'cellTree':
-            cellCount = await Directory.findOne({_id: obj.parentDirectory}).exec();
-            if (cellCount.cells.length !== 0) {
+            let parentDirectory = await Directory.findOne({_id: obj.parentDirectory}).exec();
+            if (parentDirectory.cells.length !== 0) {
               root = (await Directory.aggregate([
                 {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
                 {$unwind: "$cells"},
@@ -86,6 +91,40 @@ app.get("/MemorizationApplication", (req, res) => {
               }
             }
             res.json(tree);
+            break;
+          case 'cellLayer':
+            let cellLayer = [];
+            let layerLength = (await Directory.aggregate([
+              {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
+              {$unwind: "$cells"},
+              {$group: {_id: "$cells.layer"}}
+            ]).exec()).length;
+            let isextype = obj.isextype === 'true';
+            for (let i = 0; i < layerLength; i++) {
+              let temp = {label: ('Layer' + i)};
+              if (isextype) {
+                let oneOfLayer = (await Directory.aggregate([
+                  {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
+                  {$unwind: "$cells"},
+                  {$match: {"cells.layer": i, "cells.isnumerical": false}},
+                  {$group: {_id: "$_id", data: {$push: "$cells"}}}
+                ]).exec());
+                temp.disabled = oneOfLayer.length === 0;
+                if (temp.disabled) temp.value = [];
+                else temp.value = oneOfLayer[0].data;
+              }
+              else {
+                temp.value = (await Directory.aggregate([
+                  {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
+                  {$unwind: "$cells"},
+                  {$match: {"cells.layer": i}},
+                  {$group: {_id: "$_id", data: {$push: "$cells"}}}
+                ]).exec())[0].data;
+                temp.disabled = false;
+              }
+              cellLayer.push(temp);
+            }
+            res.json(cellLayer);
             break;
           default:
             throw new Error();
@@ -258,7 +297,6 @@ app.delete("/MemorizationApplication", (req, res) => {
               {$match: {"cells._id": mongoose.Types.ObjectId(target.parent)}},
               {$group: {_id: "$_id", data: {$push: "$cells"}}}
             ]).exec())[0].data[0];
-            // ここまで正常
             await Directory.updateOne(
               {_id: obj.parentDirectory},
               {$pull: {cells: {_id: parent._id}}}
