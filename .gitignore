@@ -2,6 +2,7 @@
 node_modules
 /public/json/
 /src/assets/linking.json
+/backend/info.log
 /dist
 /font
 

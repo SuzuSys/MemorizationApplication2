@@ -1,16 +1,14 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
-/*
-const NamesListSchema = Schema({ name: String }, { collection: "collectionTest" });
-module.exports = mongoose.model("NamesList", NamesListSchema);
-*/
 
 const CellSchema = Schema(
   {
-    id: {type: Schema.Types.ObjectId},
+    label: {type: String},
     layer: {type: Number},
+    parentDirectory: {type: Schema.Types.ObjectId, ref: "Directory"},
     parent: {type: Schema.Types.ObjectId, ref: "Cell"},
     children: [{type: Schema.Types.ObjectId, ref: "Cell"}],
+    isnumerical: {type: Boolean},
     x: {type: String},
     x_class: {type: String},
     y: {type: String},

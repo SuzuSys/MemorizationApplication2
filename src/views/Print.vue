@@ -3,13 +3,13 @@
     <div id="top_left_ui">
       <el-button 
         icon="el-icon-notebook-2"
-        @click="drawer=true">
-          Add Sheet
+        @click="drawer = true">
+          Create Document
       </el-button>
     </div>
     <div id="bottom_left_ui">
       <el-button
-        icon="el-icon-d-arrow-left"
+        econ="el-icon-d-arrow-left"
         @click="goTop">
           Top Page
       </el-button>
@@ -17,7 +17,7 @@
     <div id="top_right_ui" v-show="exist_document">
       <div id="answer_switch">
         Answer:
-        <el-switch @change="changedShowAnswer" v-model="show_answer" />
+        <el-switch v-model="show_answer"></el-switch>
       </div>
     </div>
     <div id="bottom_right_ui" v-show="exist_document">
@@ -25,99 +25,130 @@
         icon="el-icon-check"
         @click="documentPrint"
         type="primary">
-        Print
+          Print
       </el-button>
     </div>
     <el-drawer
-      title="Add Sheet"
+      title="Create Document"
       :with-header="false"
       :visible.sync="drawer"
-      :direction="direction"
+      :direction="'ltr'"
       size="50%">
-      <div id="setting">
-        <el-divider content-position="left">Make Sheet</el-divider>
-        <p>
-          <el-switch
-            v-model="temp.isextype"
-            inactive-text="word test"
-            active-text="explanation test"
-            @change="show_label=false; disabled_add_button=true" />
-        </p>
-        <p>
-          <el-cascader
-            placeholder="Select Sheet"
-            v-model="temp.sheet"
-            :options="options"
-            @change="browse_button=false; show_label=false; disabled_add_button=true" />
-        </p>
-        <p>
-          <el-button 
-            @click="makeLayer" 
-            :disabled="browse_button" 
-            size="mini"
-            icon="el-icon-search"
-            :loading="browse_loading">
-              Browse available layers
-          </el-button>
-        </p>
-        <div v-if="show_label">
+        <div id="setting">
           <el-row>
-            <el-col :span="12">
-              <el-select v-model="temp.layer" @change="disabled_add_button=false">
-                <el-option
-                  v-for="(item, index) in temp.available_layers"
-                  :key="index"
-                  :label="item.label"
-                  :value="item.value"
-                  :disabled="item.disabled" />
-              </el-select>
+            <el-col :span="24">
+              <span class="section">Make Sheet</span>
             </el-col>
-            <el-col :span="12" class="right">
+          </el-row>
+          <el-row>
+            <el-col>
+              <el-form
+                ref="making_sheet"
+                :model="making_sheet"
+                label-width="100px"
+                size="medium">
+                  <el-form-item label="Directory">
+                    <el-cascader
+                      placeholder="Select Directory"
+                      :options="directory_tree"
+                      :props="directory_tree_props"
+                      :show-all-levels="false"
+                      @change="handleChangeDirectory">
+                    </el-cascader>
+                  </el-form-item>
+                  <el-form-item label="Test Mode">
+                    <el-switch
+                      :disabled="!(making_sheet.directory_label !== '')"
+                      v-model="making_sheet.isextype"
+                      inactive-text="word(x) test"
+                      active-text="explanation(y) test"
+                      @change="makeLayer">
+                    </el-switch>
+                  </el-form-item>
+                  <el-form-item label="Layer">
+                    <el-select
+                      placeholder="Select"
+                      v-model="making_sheet.layer_value"
+                      :disabled="!making_sheet.show_layer">
+                        <el-option
+                          v-for="(item, index) in cell_layer"
+                          :key="index"
+                          :label="item.label"
+                          :value="{label: item.label, cells: item.value}"
+                          :disabled="item.disabled">
+                        </el-option>
+                    </el-select>
+                  </el-form-item>
+                  <el-form-item>
+                    <el-button
+                      type="primary"
+                      @click="addSheet"
+                      icon="el-icon-plus"
+                      :disabled="making_sheet.layer_value === ''">
+                        Add Sheet
+                    </el-button>
+                  </el-form-item>
+              </el-form>
+            </el-col>
+          </el-row>
+          <el-row>
+            <el-col :span="24">
+              <span class="section">Added Sheet</span>
+            </el-col>
+          </el-row>
+          <el-row>
+            <el-col :span="24">
+              <el-table :data="table" style="width:100%" empty-text="No Sheet" max-height="150">
+                <el-table-column prop="directory" label="Directory"></el-table-column>
+                <el-table-column prop="test_target" label="Test Target" width="120"></el-table-column>
+                <el-table-column prop="label" label="Layer" width="70"></el-table-column>
+                <el-table-column label="Operatioin" width="120">
+                  <template slot-scope="scope">
+                    <el-button
+                      @click.native.prevent="deleteRow(scope.$index, table)"
+                      size="small"
+                      type="danger"
+                      plain>
+                        Remove
+                    </el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </el-col>
+          </el-row>
+          <el-row>
+            <el-col :span="24">
+              <span class="section">Other Setting</span>
+            </el-col>
+          </el-row>
+          <el-row>
+            <el-col>
+              <el-form
+                ref="other_setting"
+                :model="other_setting"
+                label-width="80px"
+                size="medium">
+                  <el-form-item label="Title">
+                    <el-input v-model="other_setting.title"></el-input>
+                  </el-form-item>
+                  <el-form-item label="Shuffle">
+                    <el-switch v-model="other_setting.shuffle"></el-switch>
+                  </el-form-item>
+              </el-form>
+            </el-col>
+          </el-row>
+          <el-row>
+            <el-col :span="8" :offset="16">
               <el-button
-                :disabled="disabled_add_button"
-                icon="el-icon-bottom"
-                @click="addSheet">
-                  Add
+                :disabled="!can_create_document"
+                icon="el-icon-arrow-right"
+                @click="createDocument"
+                type="primary">
+                  Create Document
               </el-button>
             </el-col>
           </el-row>
         </div>
-        <el-divider content-position="left">Added Sheet</el-divider>
-        <el-table :data="table_data" style="width:100%" empty-text="No Sheet" max-height="180">
-          <el-table-column prop="content" label="Content" width="280" />
-          <el-table-column prop="target" label="Target" width="100" />
-          <el-table-column prop="layerlabel" label="Layer" width="70" />
-          <el-table-column label="Operation" width="120">
-            <template slot-scope="scope">
-              <el-button
-                @click.native.prevent="deleteRow(scope.$index, table_data)"
-                size="small"
-                type="danger"
-                plain>
-                  Remove
-              </el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-        <p>
-          Discriminated Title:
-          <el-input v-model="title" placeholder="Type something" />
-        </p>
-        <el-row>
-          <el-col :span="12">
-            Shuffle: <el-switch v-model="shuffle" />
-          </el-col>
-          <el-col :span="12" class="right">
-            <el-button
-              icon="el-icon-right"
-              @click="createDocument"
-              v-loading.fullscreen.lock="fullscreen_loading"
-              :disabled="disabled_create_button">
-              Create Document
-            </el-button>
-          </el-col>
-        </el-row>
-      </div>
     </el-drawer>
     <div id="sheet">
       <div v-show="exist_document">
@@ -125,21 +156,26 @@
           <code v-show="show_answer">Answer Sheet</code>
           <code v-show="!show_answer">Question Sheet</code>
         </div>
-        <div id="title"><code>{{ title }}</code></div>
+        <div id="title"><code>{{ other_setting.title }}</code></div>
         <header>-Memorization Sheet-</header>
         <div class="information">
-          <el-row>
-            <el-col :span="3"><code>content:</code></el-col><el-col :span="21"><code>{{ first_content }}</code></el-col>
+          <el-row type="flex" justify="center">
+            <el-col :span="20" >
+              <el-table :data="table" style="width:100%" empty-text="No Sheet">
+                <el-table-column prop="directory" label="Directory"></el-table-column>
+                <el-table-column prop="test_target" label="Test Target" width="140"></el-table-column>
+                <el-table-column prop="label" label="Layer" width="70"></el-table-column>
+              </el-table>
+            </el-col>
           </el-row>
-          <el-row v-for="(item, index) in contents" :key="index">
-            <el-col :offset="3" :span="21"><code>{{ item }}</code></el-col>
-          </el-row>
-          <el-row>
-            <el-col :span="3"><code>shuffle:</code></el-col><el-col :span="21"><code>{{ shuffle }}</code></el-col>
+          <el-row type="flex" justify="center">
+            <el-col :span="20">
+              <code>Shuffle: {{ other_setting.shuffle }}</code>
+            </el-col>
           </el-row>
         </div>
-        <div id="main" v-if="generate_questions">
-          <Question
+        <div id="main">
+          <Question 
             v-for="(item, index) in questions"
             :key="index"
             :idx="index"
@@ -149,12 +185,13 @@
             :x_class="item.x_class"
             :y_class="item.y_class"
             :isextype="item.isextype"
-            :show_answer="show_answer" />
+            :show_answer="show_answer"
+            :alone="false"/>
           <el-divider></el-divider>
         </div>
         <div id="footer">
           <div id="logo_container">
-            <img src="@/assets/logoprint.svg" width="250" height="250">
+            <img src="@/assets/logoprint.svg" width="250" height="250" alt="">
             <p>made with <span id="appname">Memorization Application</span></p>
             <p id="url">https://github.com/SuzuSys/MemorizationApplication2</p>
           </div>
@@ -165,8 +202,8 @@
 </template>
 
 <script>
-import Question from "../components/Question";
-
+import Database from '../api/methods'
+import Question from '../components/Question'
 export default {
   name: 'Print',
   components: {
@@ -175,162 +212,86 @@ export default {
   data() {
     return {
       drawer: false,
-      direction: 'ltr',
-      shuffle: false,
-      temp: {
-        sheet: [],
-        url: '',
-        isextype: false,
-        available_layers: [],
-        layer: 'Select Layer'
-      },
-      browse_button: true,
-      browse_loading: false,
-      show_label: false,
-      disabled_add_button: true,
-      table_data: [],
-      questions: [],
       exist_document: false,
       show_answer: false,
-      fullscreen_loading: false,
-      disabled_create_button: true,
-      first_content: '',
-      contents: [],
-      title: '',
-      generate_questions: false
-    }
-  },
-  computed: {
-    options () {
-      return this.$store.state.linking
+
+      directory_tree: [],
+      cell_layer: [],
+      table: [],
+      can_create_document: false,
+      questions: [],
+      directory_tree_props: {
+        label: 'label',
+        children: 'children',
+        disabled: 'isnotleaf',
+        checkStrictly: true
+      },
+      making_sheet: {
+        directory_id: '',
+        directory_label: '',
+        isextype: false,
+        show_layer: false,
+        layer_value: ''
+      },
+      other_setting: {
+        title: '',
+        shuffle: false
+      }
     }
   },
   methods: {
+    handleChangeDirectory(data) {
+      let obj = data[data.length - 1];
+      this.making_sheet.directory_id = obj._id;
+      this.making_sheet.directory_label = obj.name;
+      this.makeLayer();
+    },
     makeLayer() {
-      this.browse_loading = true;
-      this.temp.available_layers = [];
-      this.temp.layer = 'Select Layer';
-      this.temp.url = './json/';
-      for (let i = 0; i < this.temp.sheet.length; i++) {
-        this.temp.url += this.temp.sheet[i].url + '/';
-      }
-      this.$store.dispatch('lookJson', this.temp.url).then(() => {
-        let position = this.$store.state.temp.json;
-        let history = [];
-        let finish = false;
-        let go_sibling = false;
-        if (this.temp.isextype) {
-          let exist_layer = [];
-          while (!finish) {
-            if (position.length !== 0 && !go_sibling) {
-              history.push({arr: position, idx: 0});
-              position = position[0].children;
-              let endidx = history.length - 1;
-              if (exist_layer.length - 1 < endidx) exist_layer.push(false);
-              if (!exist_layer[endidx]) exist_layer[endidx] = !history[endidx].arr[0].isnumeric;
-            }
-            else {
-              let end = history[history.length - 1]
-              if (end.arr.length - 1 > end.idx) {
-                end.idx++;
-                position = end.arr[end.idx].children;
-                let endidx = history.length - 1;
-                if (!exist_layer[endidx]) {
-                  exist_layer[endidx] = !(history[endidx].arr[history[endidx].idx].isnumeric);
-                }
-                go_sibling = false;
-              }
-              else {
-                position = history.pop().arr;
-                if (history.length === 0) finish = true;
-                go_sibling = true;
-              }
-            }
-          }
-          for (let i = 0; i < exist_layer.length; i++) {
-            this.temp.available_layers.push({
-              value: i,
-              label: 'Layer' + String(i + 1),
-              disabled: !exist_layer[i]
-            })
-          }
-        }
-        else {
-          let max_layer = 0;
-          while (!finish) {
-            if (position.length !== 0 && !go_sibling) {
-              history.push({arr: position, idx: 0});
-              position = position[0].children;
-              if (max_layer < history.length) max_layer = history.length;
-            }
-            else {
-              let end = history[history.length - 1]
-              if (end.arr.length - 1 > end.idx) {
-                end.idx++;
-                position = end.arr[end.idx].children;
-                go_sibling = false;
-              }
-              else {
-                position = history.pop().arr;
-                if (history.length === 0) finish = true;
-                go_sibling = true;
-              }
-            }
-          }
-          for (let i = 0; i < max_layer; i++) {
-            this.temp.available_layers.push({
-              value: i,
-              label: 'Layer' + String(i + 1),
-              disabled: false
-            });
-          }
-        }
-        this.show_label = true;
-        this.browse_loading = false;
+      this.making_sheet.show_layer = false;
+      this.making_sheet.layer_value = '';
+      let params = { 
+        parentDirectory: this.making_sheet.directory_id,
+        isextype: this.making_sheet.isextype
+      };
+      Database.getCellLayer(params).then(result => {
+        this.cell_layer = result.data;
+        this.making_sheet.show_layer = true;
       });
     },
     addSheet() {
-      let layerlabel = 'Layer' + String(this.temp.layer + 1);
-      this.table_data.push({
-        content: this.temp.sheet[this.temp.sheet.length - 1].label,
-        url: this.temp.url,
-        target: this.temp.isextype ? 'explanation' : 'word',
-        isextype: this.temp.isextype,
-        layerlabel: layerlabel,
-        layer: this.temp.layer
-      });
-      this.disabled_create_button = false;
+      let obj = {
+        cells: this.making_sheet.layer_value.cells,
+        directory: this.making_sheet.directory_label,
+        isextype: this.making_sheet.isextype,
+        test_target: (this.making_sheet.isextype ? 'explanation(y)' : 'word(x)'),
+        label: this.making_sheet.layer_value.label
+      };
+      this.table.push(obj);
+      this.can_create_document = true;
     },
     deleteRow(index, rows) {
       rows.splice(index, 1);
-      if (this.table_data.length === 0) {
-        this.disabled_create_button = true;
+      if (this.table.length === 0) {
+        this.can_create_document = false;
       }
-    },
-    changedShowAnswer(show) {
-      this.$store.commit('changedShowAnswer', show);
     },
     createDocument() {
-      this.fullscreen_loading = true;
-      this.drawer = false;
-      this.first_content = this.table_data[0].content;
-      this.contents = [];
-      if (this.table_data.length > 1) {
-        for (let i = 1; i < this.table_data.length; i++) {
-          this.contents.push(this.table_data[i].content);
+      let arr = [];
+      for (let i = 0; i < this.table.length; i++) {
+        for (let j = 0; j < this.table[i].cells.length; j++) {
+          this.table[i].cells[j].isextype = this.table[i].isextype;
+          arr.push(this.table[i].cells[j]);
         }
       }
-      this.generate_questions = false;
-      this.$store.dispatch('createDocument', this.table_data).then(() => {
-        if (this.shuffle) this.$store.commit('shuffleQuestions');
-        this.questions = this.$store.state.questions;
-        this.exist_document = true;
-        this.generate_questions = true;
-        this.fullscreen_loading = false;
-      });
-    },
-    documentPrint() {
-      window.print();
+      if (this.other_setting.shuffle) {
+        for (let i = arr.length - 1; i >= 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+      }
+      this.questions = arr;
+      this.drawer = false;
+      this.exist_document = true;
     },
     goTop() {
       if (this.exist_document) {
@@ -341,31 +302,24 @@ export default {
       else {
         this.$router.push({ path: '/' });
       }
+    },
+    documentPrint() {
+      window.print();
     }
+  },
+  created: async function() {
+    this.directory_tree = (await Database.getDirectoryTree()).data;
   }
-};
+}
 </script>
 
-<style>
+<style scoped>
 @font-face {
   font-family: 'SevenSegment';
   src: url('../../font/7 Segment.ttf') format('truetype');
 }
-header {
-  text-align: center;
-  font-family: SevenSegment;
-  font-size: 5em;
-  margin-top: 15px;
-}
 #app {
-  margin: 0px;
-}
-#sheet {
-  position: relative;
-  width: 793px;
-  margin: auto;
-  background-color: white;
-  padding: 10mm;
+  margin: 8px 0px;
 }
 #top_left_ui {
   position: fixed;
@@ -402,19 +356,32 @@ header {
   width: 140px;
   text-align: center;
 }
+#answer_switch {
+  background-color: white;
+  border-radius: 4px;
+  padding: 10px 18px;
+  color: #505050;
+  font-size: 0.9em;
+}
 #setting {
-  padding: 0px 20px;
+  padding: 10px 20px;
   color: #505050;
 }
-.el-row:not(.information .el-row, #main .el-row) {
-  margin-top: 10px;
+.section {
+  font-size: 1.3em;
 }
-.right {
-  text-align: right;
+.el-form-item {
+  margin-bottom: 5px;
 }
-code {
-  font-family: note monospace,SFMono-Regular,Consolas,Menlo,Courier,monospace;
-  color: steelblue;
+.el-row:not(#main .el-row) {
+  margin-bottom: 10px;
+}
+#sheet {
+  position: relative;
+  width: calc(793px - 2 * 10mm);
+  margin: auto;
+  background-color: white;
+  padding: 10mm;
 }
 #sheet_type {
   position: absolute;
@@ -437,7 +404,7 @@ code {
   position: absolute;
   top: 5px;
   left: 0px;
-  width: 868px;
+  width: 630px;
   text-align: center;
 }
 #title code {
@@ -446,10 +413,29 @@ code {
   padding: 0px 10px;
   color: black;
 }
+header {
+  text-align: center;
+  font-family: SevenSegment;
+  font-size: 4.5em;
+  margin-top: 15px;
+}
+code {
+  font-family: note monospace,SFMono-Regular,Consolas,Menlo,Courier,monospace;
+  color: steelblue;
+}
+.information .el-table-column {
+  font-family: note monospace,SFMono-Regular,Consolas,Menlo,Courier,monospace;
+}
+.information code {
+  display: block;
+  width: 100%;
+  text-align: center;
+  color: #606266;
+}
 #logo_container {
   display: inline-block;
   position: relative;
-  width: 800px;
+  width: calc(793px - 2 * 10mm);
   height: 140px;
 }
 #logo_container img {
@@ -478,13 +464,20 @@ code {
   text-decoration: underline;
 }
 @media print {
-  #setting_button {
+  #app {
+    margin: 0px;
+    padding: 0px;
+  }
+  #top_left_ui {
     display: none;
   }
-  #setting {
+  #top_right_ui {
     display: none;
   }
-  #answer_switch {
+  #bottom_left_ui {
+    display: none;
+  }
+  #bottom_right_ui {
     display: none;
   }
 }
