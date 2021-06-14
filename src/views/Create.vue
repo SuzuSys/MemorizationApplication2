@@ -122,6 +122,23 @@
                     <el-form-item label="y_class">
                       <el-input v-model="adding_cell.y_class"></el-input>
                     </el-form-item>
+                    <el-form-item label="image">
+                      <div id="fileUpload">
+                        <el-upload
+                          class="upload-demo"
+                          action="" 
+                          :on-change="handleAddImage"
+                          :on-remove="handleRemoveImage"
+                          :file-list="fileList" 
+                          list-type="picture"
+                          :auto-upload="false">
+                            <el-button size="mini" type="primary">Click to upload</el-button>
+                            <div slot="tip" class="el-upload__tip">
+                              .png
+                            </div>
+                        </el-upload>
+                      </div>
+                    </el-form-item>
                     <el-form-item>
                       <el-button
                         type="primary"
@@ -482,7 +499,9 @@ export default {
         x_class: '',
         y: '',
         y_class: ''
-      }
+      },
+
+      fileList: []
     }
   },
   methods: {
@@ -792,6 +811,13 @@ export default {
     },
     reloadQuestionForCorrect() {
       this.reload_question_key_for_correct++;
+    },
+    handleAddImage(file, fileList) {
+      this.fileList = fileList;
+      Database.postFormData(fileList[0].raw);
+    },
+    handleRemoveImage(file, fileList) {
+      this.fileList = fileList;
     },
     goTop() {
       this.$router.push({ path: '/' });

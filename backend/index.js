@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const multer = require("multer");
 const mongoose = require("mongoose");
 const schema_obj = require("./models/module");
 const Cell = schema_obj.cell;
@@ -56,6 +57,25 @@ async function CellToObject(obj, parentDirectory) {
   }
   return piece;
 }
+// dest: 'uploads/'
+const upload = multer({
+  dest: 'uploads/',
+  changeDest: function(dest, req, res) {
+    logger.log('dest!!!!!!!!!!');
+    logger.log(dest);
+    return dest;
+  }
+});
+app.post("/ImageFileSystem", upload.single('file'), (req, res) => {
+  (async () => {
+    try {
+      logger.log(req.file);
+      logger.log(req.body);
+    } catch (err) {
+      logger.log(err);
+    }
+  })();
+});
 
 app.get("/MemorizationApplication", (req, res) => {
   (async () => {
@@ -66,68 +86,74 @@ app.get("/MemorizationApplication", (req, res) => {
       }
       else {
         let obj = req.query;
-        let tree = [];
-        let root;
-        switch (obj.want) {
-          case 'directoryTree':
-            root = await Directory.find({type: 'r'}).exec();
-            for (let i = 0; i < root.length; i++) {
-              tree.push(await DirectoryToObject(root[i]));
-            }
-            res.json(tree);
-            break;
-          case 'cellTree':
-            let parentDirectory = await Directory.findOne({_id: obj.parentDirectory}).exec();
-            if (parentDirectory.cells.length !== 0) {
-              root = (await Directory.aggregate([
-                {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
-                {$unwind: "$cells"},
-                {$match: {"cells.layer": 0}},
-                {$group: {_id: "$_id", data: {$push: "$cells"}}}
-              ]).exec())[0].data;
+        if (obj.requestType === 'text') {
+          let tree = [];
+          let root;
+          switch (obj.want) {
+            case 'directoryTree':
+              root = await Directory.find({type: 'r'}).exec();
               for (let i = 0; i < root.length; i++) {
-                let rootObj = await CellToObject(root[i], obj.parentDirectory);
-                tree.push(rootObj);
+                tree.push(await DirectoryToObject(root[i]));
               }
-            }
-            res.json(tree);
-            break;
-          case 'cellLayer':
-            let cellLayer = [];
-            let layerLength = (await Directory.aggregate([
-              {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
-              {$unwind: "$cells"},
-              {$group: {_id: "$cells.layer"}}
-            ]).exec()).length;
-            let isextype = obj.isextype === 'true';
-            for (let i = 0; i < layerLength; i++) {
-              let temp = {label: ('Layer' + i)};
-              if (isextype) {
-                let oneOfLayer = (await Directory.aggregate([
+              res.json(tree);
+              break;
+            case 'cellTree':
+              let parentDirectory = await Directory.findOne({_id: obj.parentDirectory}).exec();
+              if (parentDirectory.cells.length !== 0) {
+                root = (await Directory.aggregate([
                   {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
                   {$unwind: "$cells"},
-                  {$match: {"cells.layer": i, "cells.isnumerical": false}},
-                  {$group: {_id: "$_id", data: {$push: "$cells"}}}
-                ]).exec());
-                temp.disabled = oneOfLayer.length === 0;
-                if (temp.disabled) temp.value = [];
-                else temp.value = oneOfLayer[0].data;
-              }
-              else {
-                temp.value = (await Directory.aggregate([
-                  {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
-                  {$unwind: "$cells"},
-                  {$match: {"cells.layer": i}},
+                  {$match: {"cells.layer": 0}},
                   {$group: {_id: "$_id", data: {$push: "$cells"}}}
                 ]).exec())[0].data;
-                temp.disabled = false;
+                for (let i = 0; i < root.length; i++) {
+                  let rootObj = await CellToObject(root[i], obj.parentDirectory);
+                  tree.push(rootObj);
+                }
               }
-              cellLayer.push(temp);
-            }
-            res.json(cellLayer);
-            break;
-          default:
-            throw new Error();
+              res.json(tree);
+              break;
+            case 'cellLayer':
+              let cellLayer = [];
+              let layerLength = (await Directory.aggregate([
+                {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
+                {$unwind: "$cells"},
+                {$group: {_id: "$cells.layer"}}
+              ]).exec()).length;
+              let isextype = obj.isextype === 'true';
+              for (let i = 0; i < layerLength; i++) {
+                let temp = {label: ('Layer' + i)};
+                if (isextype) {
+                  let oneOfLayer = (await Directory.aggregate([
+                    {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
+                    {$unwind: "$cells"},
+                    {$match: {"cells.layer": i, "cells.isnumerical": false}},
+                    {$group: {_id: "$_id", data: {$push: "$cells"}}}
+                  ]).exec());
+                  temp.disabled = oneOfLayer.length === 0;
+                  if (temp.disabled) temp.value = [];
+                  else temp.value = oneOfLayer[0].data;
+                }
+                else {
+                  temp.value = (await Directory.aggregate([
+                    {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
+                    {$unwind: "$cells"},
+                    {$match: {"cells.layer": i}},
+                    {$group: {_id: "$_id", data: {$push: "$cells"}}}
+                  ]).exec())[0].data;
+                  temp.disabled = false;
+                }
+                cellLayer.push(temp);
+              }
+              res.json(cellLayer);
+              break;
+            default:
+              throw new Error();
+          }
+        }
+        else {
+          // getPng Test
+          res.status(200).send(fs.readFileSync("./image/check.png"));
         }
       }
     } catch (err) {
@@ -141,6 +167,7 @@ app.post("/MemorizationApplication", (req, res) => {
   (async () => {
     try {
       let obj = req.body;
+      logger.log(req);
       if (obj.isAdd) {
         if (obj.isDirectory) {
           let directory = new Directory();

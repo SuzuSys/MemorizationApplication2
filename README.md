@@ -20,10 +20,8 @@ UI画面は以下のようになっている。
 ![選択画面](https://user-images.githubusercontent.com/73921483/118431870-3d429480-b712-11eb-9d0f-4054829724e3.png)  
 ![question](https://user-images.githubusercontent.com/73921483/118431878-42074880-b712-11eb-976d-6138705396eb.png)  
 ![answer](https://user-images.githubusercontent.com/73921483/118431891-4a5f8380-b712-11eb-8c7a-21bf6ac5754f.png)  
-このアプリは印刷して紙面化またはPDF化することを前提としている。理由は次の通り。
-+ PDFはどんな端末でも正常に表示できる
-+ 紙面のほうがディスプレイより扱いやすい(個人的な意見)
-+ 勉強中は電子端末を使いたくない(個人的な意見)
+このアプリは印刷して紙面化またはPDF化することを前提としている。  
+※v-htmlタグを使用し、ユーザーがhtmlを入力できるようになっているため、自由度は高いがSQLインジェクションに貧弱であるという特徴を持っている。あくまでlocalhost内で使用することを前提としている。
 
 ## Environment
 Node.js  
@@ -34,7 +32,6 @@ MongoDB
 ## Plugin
 vue-mathjax  
 Element UI  
-Vuex  
 Axios  
 Vue Router  
 mongoose  
