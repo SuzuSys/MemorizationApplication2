@@ -23,6 +23,21 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(cors());
 
+app.get("/getDirectoryTree", (req, res) => {
+  (async () => {
+    try {
+      let tree = [];
+      let root = await Directory.find({type: 'r'}).exec();
+      for (let i = 0; i < root.length; i++) {
+        tree.push(await DirectoryToObject(root[i]));
+      }
+      res.json(tree);
+    } catch (err) {
+      logger.log(err);
+      res.status(500).send("faild");
+    }
+  })();
+});
 async function DirectoryToObject(obj) {
   let piece = {label: obj.name, value: obj};
   if (obj.type === 'l') {
@@ -43,6 +58,31 @@ async function DirectoryToObject(obj) {
   return piece;
 }
 
+app.get("/getCellTree", (req, res) => {
+  (async () => {
+    try {
+      let obj = req.query;
+      let tree = [];
+      let parentDirectory = await Directory.findOne({_id: obj.parentDirectory}).exec();
+      if (parentDirectory.cells.length !== 0) {
+        let root = (await Directory.aggregate([
+          {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
+          {$unwind: "$cells"},
+          {$match: {"cells.layer": 0}},
+          {$group: {_id: "$_id", data: {$push: "$cells"}}}
+        ]).exec())[0].data;
+        for (let i = 0; i < root.length; i++) {
+          let rootObj = await CellToObject(root[i], obj.parentDirectory);
+          tree.push(rootObj);
+        }
+      }
+      res.json(tree);
+    } catch (err) {
+      logger.log(err);
+      res.status(500).send("faild");
+    }
+  })();
+});
 async function CellToObject(obj, parentDirectory) {
   let piece = {label: obj.label, id: obj._id, value: obj};
   piece.children = [];
@@ -57,19 +97,86 @@ async function CellToObject(obj, parentDirectory) {
   }
   return piece;
 }
-// dest: 'uploads/'
-const upload = multer({
-  dest: 'uploads/',
-  changeDest: function(dest, req, res) {
-    logger.log('dest!!!!!!!!!!');
-    logger.log(dest);
-    return dest;
-  }
-});
-app.post("/ImageFileSystem", upload.single('file'), (req, res) => {
+
+app.get("/getCellLayer", (req, res) => {
   (async () => {
     try {
-      logger.log(req.file);
+      let obj = req.query;
+      let cellLayer = [];
+      let layerLength = (await Directory.aggregate([
+        {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
+        {$unwind: "$cells"},
+        {$group: {_id: "$cells.layer"}}
+      ]).exec()).length;
+      let isextype = obj.isextype === 'true';
+      for (let i = 0; i < layerLength; i++) {
+        let temp = {label: ('Layer' + i)};
+        if (isextype) {
+          let oneOfLayer = (await Directory.aggregate([
+            {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
+            {$unwind: "$cells"},
+            {$match: {"cells.layer": i, "cells.isnumerical": false}},
+            {$group: {_id: "$_id", data: {$push: "$cells"}}}
+          ]).exec());
+          temp.disabled = oneOfLayer.length === 0;
+          if (temp.disabled) temp.value = [];
+          else temp.value = oneOfLayer[0].data;
+        }
+        else {
+          temp.value = (await Directory.aggregate([
+            {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
+            {$unwind: "$cells"},
+            {$match: {"cells.layer": i}},
+            {$group: {_id: "$_id", data: {$push: "$cells"}}}
+          ]).exec())[0].data;
+          temp.disabled = false;
+        }
+        cellLayer.push(temp);
+      }
+      res.json(cellLayer);
+    } catch (err) {
+      logger.log(err);
+      res.status(500).send("faild");
+    }
+  })();
+});
+
+app.post("/addDirectory", (req, res) => {
+  (async () => {
+    try {
+      let obj = req.body;
+      let directory = new Directory();
+      directory.type = obj.type;
+      if (obj.type != 'r') {
+        directory.parent = obj.parent;
+        await Directory.updateOne(
+          {_id: obj.parent},
+          {$addToSet: {children: directory._id}}
+        ).exec();
+      }
+      directory.name = obj.name;
+      res.json(await directory.save());
+    } catch (err) {
+      logger.log(err);
+      res.status(500).send("faild");
+    }
+  })();
+});
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    logger.log(req.body.bodytest);
+    cb(null, 'image/')
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname)
+  }
+});
+const upload = multer({storage: storage});
+app.post("/ImageFileSystem", upload.array('file[]'), (req, res) => {
+  (async () => {
+    try {
+      logger.log(req.files);
       logger.log(req.body);
     } catch (err) {
       logger.log(err);

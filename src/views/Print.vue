@@ -202,7 +202,7 @@
 </template>
 
 <script>
-import Database from '../api/methods'
+import Database from '../apicreate'
 import Question from '../components/Question'
 export default {
   name: 'Print',
@@ -249,11 +249,11 @@ export default {
     makeLayer() {
       this.making_sheet.show_layer = false;
       this.making_sheet.layer_value = '';
-      let params = { 
+      const obj = { 
         parentDirectory: this.making_sheet.directory_id,
         isextype: this.making_sheet.isextype
       };
-      Database.getCellLayer(params).then(result => {
+      Database.Base().get('/getCellLayer', {params: obj}).then(result => {
         this.cell_layer = result.data;
         this.making_sheet.show_layer = true;
       });
@@ -308,7 +308,7 @@ export default {
     }
   },
   created: async function() {
-    this.directory_tree = (await Database.getDirectoryTree()).data;
+    this.directory_tree = (await Database.Base().get('/getDirectoryTree')).data;
   }
 }
 </script>

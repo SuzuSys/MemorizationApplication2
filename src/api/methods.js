@@ -8,15 +8,19 @@ export default {
     obj.requestType = 'image';
     return await PngApi.get("/MemorizationApplication", {params: obj});
   },
-  async postFormData(file) {
+  async postFormData(files) {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('bodytest', 'ok');
+    for (let i = 0; i < files.length; i++) {
+      formData.append('file[]', files[i]);
+    }
     return await TextApi().post("/ImageFileSystem", formData, {
       headers: {
         'content-type': 'multipart/form-data'
       }
     });
   },
+  // ok
   async getDirectoryTree() {
     // require bool of is_migrating
     let obj = {};
@@ -24,6 +28,7 @@ export default {
     obj.want = "directoryTree";
     return await TextApi().get("/MemorizationApplication", {params: obj});
   },
+  // ok
   async getCellTree(parentDirectory) {
     // require a _id of parentDirectory
     let obj = {};
@@ -32,12 +37,14 @@ export default {
     obj.parentDirectory = parentDirectory;
     return await TextApi().get("/MemorizationApplication", {params: obj});
   },
+  // ok
   async getCellLayer(obj) {
     // require key 'parentDirectory', 'isextype'
     obj.requestType = 'text';
     obj.want = "cellLayer";
     return await TextApi().get("/MemorizationApplication", {params: obj});
-  },
+  }, 
+  // ok
   async addDirectory(data) {
     // require key 'type', 'name' (require key 'parent' in case of type !== 'r')
     data.isAdd = true;
