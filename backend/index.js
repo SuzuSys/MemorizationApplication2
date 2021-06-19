@@ -202,6 +202,28 @@ app.post("/migrateDirectory", (req, res) => {
   })();
 });
 
+app.delete("/deleteDirectory", (req, res) => {
+  (async () => {
+    try {
+      let obj = req.body;
+      let target = await Directory.findOne({_id: obj.id}).exec();
+      if (target.children.length === 0) {
+        if (target.type !== 'r') {
+          await Directory.updateOne(
+            {_id: target.parent},
+            {$pull: {children: obj.id}}
+          ).exec();
+        }
+        res.json(await Directory.deleteOne({_id: obj.id}).exec());
+      }
+      else throw new Error();
+    } catch (err) {
+      logger.log(err);
+      res.status(500).send("faild");
+    }
+  })();
+});
+
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     logger.log(req.body.bodytest);

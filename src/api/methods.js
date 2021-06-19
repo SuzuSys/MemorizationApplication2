@@ -88,6 +88,7 @@ export default {
     data.want = 'correct';
     return await TextApi().post("/MemorizationApplication", data);
   },
+  // ok
   async deleteDirectory(data) {
     // require key 'id'
     data.isDirectory = true;

@@ -689,7 +689,7 @@ export default {
     deleteDirectory() {
       this.delete_directory_dialog = false;
       let obj = {id: this.directory_target_id};
-      DatabasePrototype.deleteDirectory(obj).then(result => {
+      Database.Base().delete("/deleteDirectory", {data: obj}).then(result => {
         if (result.status === 200) {
           this.$notify({
             title: 'Success',
