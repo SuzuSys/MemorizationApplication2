@@ -625,8 +625,11 @@ export default {
       });
     },
     renameDirectory() {
-      let obj = {id: this.directory_target_id, name: this.renaming_directory.name};
-      DatabasePrototype.renameDirectory(obj).then(result => {
+      let obj = {
+        id: this.directory_target_id,
+        name: this.renaming_directory.name
+      };
+      Database.Base().post("/renameDirectory", obj).then(result => {
         if (result.status === 200) {
           this.$notify({
             title: 'Success',

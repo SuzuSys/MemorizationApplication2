@@ -163,6 +163,21 @@ app.post("/addDirectory", (req, res) => {
   })();
 });
 
+app.post("/renameDirectory", (req, res) => {
+  (async () => {
+    try {
+      let obj = req.body;
+      res.json(await Directory.updateOne(
+        {_id: obj.id},
+        {name: obj.name}
+      ).exec());
+    } catch (err) {
+      logger.log(err);
+      res.status(500).send("faild");
+    }
+  })();
+});
+
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     logger.log(req.body.bodytest);

@@ -65,6 +65,7 @@ export default {
     data.isRoot = false;
     return await TextApi().post("/MemorizationApplication", data);
   },
+  // ok
   async renameDirectory(data) {
     // require key 'id' 'name'
     data.isAdd = false;
