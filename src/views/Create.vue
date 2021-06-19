@@ -652,27 +652,35 @@ export default {
       this.migrating_directory.to_id = obj._id;
     },
     migrateDirectory() {
-      let obj = {
-        id: this.directory_target_id,
-        to: this.migrating_directory.to_id
-      };
-      DatabasePrototype.migrateDirectory(obj).then(result => {
-        if (result.status === 200) {
-          this.$notify({
-            title: 'Success',
-            message: 'Successfully migrated directory',
-            type: 'success'
-          });
-          this.resetDirectoryTree();
-        }
-        else {
-          this.$notify({
-            title: 'Error',
-            message: 'Could not migrate directory successfully',
-            type: 'error'
-          });
-        }
-      });
+      if (this.directory_target_id === this.migrating_directory.to_id) {
+        this.$message({
+          message: 'The requested operation is invalid.',
+          type: 'error'
+        });
+      }
+      else {
+        let obj = {
+          id: this.directory_target_id,
+          to: this.migrating_directory.to_id
+        };
+        Database.Base().post("/migrateDirectory", obj).then(result => {
+          if (result.status === 200) {
+            this.$notify({
+              title: 'Success',
+              message: 'Successfully migrated directory',
+              type: 'success'
+            });
+            this.resetDirectoryTree();
+          }
+          else {
+            this.$notify({
+              title: 'Error',
+              message: 'Could not migrate directory successfully',
+              type: 'error'
+            });
+          }
+        });
+      }
     },
     deleteDirectoryDialog() {
       if (this.directory_target_type === 'l') this.delete_directory_dialog = true;

@@ -178,6 +178,30 @@ app.post("/renameDirectory", (req, res) => {
   })();
 });
 
+app.post("/migrateDirectory", (req, res) => {
+  (async () => {
+    try {
+      let obj = req.body;
+      let target = await Directory.findOne({_id: obj.id}).exec();
+      await Directory.updateOne(
+        {_id: target.parent},
+        {$pull: {children: obj.id}}
+      ).exec();
+      await Directory.updateOne(
+        {_id: obj.to},
+        {$addToSet: {children: obj.id}}
+      ).exec();
+      res.json(await Directory.updateOne(
+        {_id: obj.id},
+        {parent: obj.to}
+      ).exec());
+    } catch (err) {
+      logger.log(err);
+      res.status(500).send("faild");
+    }
+  })();
+});
+
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     logger.log(req.body.bodytest);

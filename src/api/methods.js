@@ -73,6 +73,7 @@ export default {
     data.want = 'rename';
     return await TextApi().post("/MemorizationApplication", data);
   },
+  // ok
   async migrateDirectory(data) {
     // require key 'id', 'to'
     data.isAdd = false;
