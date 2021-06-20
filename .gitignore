@@ -1,9 +1,8 @@
 .DS_Store
 node_modules
-/public/json/
-/src/assets/linking.json
 /backend/info.log
 /backend/image/
+/backend/image_temp/
 /dist
 /font
 

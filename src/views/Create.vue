@@ -129,7 +129,7 @@
                           action="" 
                           :on-change="handleAddImage"
                           :on-remove="handleRemoveImage"
-                          :file-list="fileList" 
+                          :file-list="adding_cell.file_list" 
                           list-type="picture"
                           :auto-upload="false">
                             <el-button size="mini" type="primary">Click to upload</el-button>
@@ -138,9 +138,6 @@
                             </div>
                         </el-upload>
                       </div>
-                    </el-form-item>
-                    <el-form-item label="send image">
-                      <el-button @click="testSendImage">Send</el-button>
                     </el-form-item>
                     <el-form-item>
                       <el-button
@@ -492,7 +489,8 @@ export default {
         x: '',
         x_class: '',
         y: '',
-        y_class: ''
+        y_class: '',
+        file_list: []
       },
 
       reload_question_key_for_correct: 0,
@@ -503,9 +501,7 @@ export default {
         x_class: '',
         y: '',
         y_class: ''
-      },
-
-      fileList: []
+      }
     }
   },
   methods: {
@@ -723,53 +719,56 @@ export default {
     },
 
     addCell() {
-      const obj = {
-        parentDirectory: this.directory_target_id,
-        label: this.adding_cell.label,
-        isnumerical: this.adding_cell.isnumerical,
-        x: this.adding_cell.x,
-        x_class: this.adding_cell.x_class,
-        y: this.adding_cell.y,
-        y_class: this.adding_cell.y_class
-      };
-      if (this.adding_cell.type === 'r') {
-        DatabasePrototype.addRootCell(obj).then(result => {
-          if (result.status === 200) {
-            this.$notify({
-              title: 'Success',
-              message: 'Successfully added cell',
-              type: 'success'
-            });
-            this.resetCellTreeForAdd();
-          }
-          else {
-            this.$notify({
-              title: 'Error',
-              message: 'Could not add cell successfully',
-              type: 'error'
-            });
-          }
-        })
+      if (this.adding_cell.file_list.length === 0) {
+        const obj = {
+          parentDirectory: this.directory_target_id,
+          label: this.adding_cell.label,
+          isnumerical: this.adding_cell.isnumerical,
+          x: this.adding_cell.x,
+          x_class: this.adding_cell.x_class,
+          y: this.adding_cell.y,
+          y_class: this.adding_cell.y_class,
+          isRoot: this.adding_cell.type === 'r'
+        };
+        if (this.adding_cell.type !== 'r') {
+          obj.parent = this.cell_target_id;
+        }
+        Database.Base().post('/addCell', obj).then(this.notifyForAddCell);
       }
       else {
-        if (this.cell_target_id === '') return;
-        obj.parent = this.cell_target_id;
-        DatabasePrototype.addNodeCell(obj).then(result => {
-          if (result.status === 200) {
-            this.$notify({
-              title: 'Success',
-              message: 'Successfully added cell',
-              type: 'success'
-            });
-            this.resetCellTreeForAdd();
+        const formData = new FormData();
+        formData.append('parentDirectory', this.directory_target_id);
+        formData.append('label', this.adding_cell.label);
+        formData.append('isnumerical', this.adding_cell.isnumerical);
+        formData.append('x', this.adding_cell.x);
+        formData.append('x_class', this.adding_cell.x_class);
+        formData.append('y', this.adding_cell.y);
+        formData.append('y_class', this.adding_cell.y_class);
+        formData.append('isRoot', this.adding_cell.type === 'r');
+        for (let i = 0; i < this.adding_cell.file_list.length; i++) {
+          formData.append('file[]', this.adding_cell.file_list[i].raw);
+        }
+        Database.Base().post('/addCellWithImage', formData, {
+          headers: {
+            'content-type': 'multipart/form-data'
           }
-          else {
-            this.$notify({
-              title: 'Error',
-              message: 'Could not add cell successfully',
-              type: 'error'
-            });
-          }
+        }).then(this.notifyForAddCell);
+      }
+    },
+    notifyForAddCell(result) {
+      if (result.status === 200) {
+        this.$notify({
+          title: 'Success',
+          message: 'Successfully added cell',
+          type: 'success'
+        });
+        this.resetCellTreeForAdd();
+      }
+      else {
+        this.$notify({
+          title: 'Error',
+          message: 'Could not add cell successfully',
+          type: 'error'
         });
       }
     },
@@ -832,20 +831,13 @@ export default {
       this.reload_question_key_for_correct++;
     },
     handleAddImage(file, fileList) {
-      this.fileList = fileList;
+      this.adding_cell.file_list = fileList;
     },
     handleRemoveImage(file, fileList) {
-      this.fileList = fileList;
+      this.adding_cell.file_list = fileList;
     },
     goTop() {
       this.$router.push({ path: '/' });
-    },
-    testSendImage() {
-      const imageList = [];
-      for (let i = 0; i < this.fileList.length; i++) {
-        imageList.push(this.fileList[i].raw)
-      }
-      DatabasePrototype.postFormData(imageList);
     }
   },
   created: async function () {

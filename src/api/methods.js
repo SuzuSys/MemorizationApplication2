@@ -8,6 +8,7 @@ export default {
     obj.requestType = 'image';
     return await PngApi.get("/MemorizationApplication", {params: obj});
   },
+  // ok
   async postFormData(files) {
     const formData = new FormData();
     formData.append('bodytest', 'ok');
@@ -51,6 +52,7 @@ export default {
     data.isDirectory = true;
     return await TextApi().post("/MemorizationApplication", data);
   },
+  // ok
   async addRootCell(data) {
     // require key 'parentDirectory', 'label', 'isnumerical', 'x', 'x_class', 'y', 'y_class', ('img')
     data.isAdd = true;
@@ -58,6 +60,7 @@ export default {
     data.isRoot = true;
     return await TextApi().post("/MemorizationApplication", data);
   },
+  // ok
   async addNodeCell(data) {
     // require key 'parentDirectory', 'label', 'parent', 'isnumerical', 'x', 'x_class', 'y', 'y_class', ('img')
     data.isAdd = true;
