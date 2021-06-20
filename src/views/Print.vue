@@ -241,7 +241,7 @@ export default {
   },
   methods: {
     handleChangeDirectory(data) {
-      let obj = data[data.length - 1];
+      const obj = data[data.length - 1];
       this.making_sheet.directory_id = obj._id;
       this.making_sheet.directory_label = obj.name;
       this.makeLayer();
@@ -259,7 +259,7 @@ export default {
       });
     },
     addSheet() {
-      let obj = {
+      const obj = {
         cells: this.making_sheet.layer_value.cells,
         directory: this.making_sheet.directory_label,
         isextype: this.making_sheet.isextype,
@@ -276,7 +276,7 @@ export default {
       }
     },
     createDocument() {
-      let arr = [];
+      const arr = [];
       for (let i = 0; i < this.table.length; i++) {
         for (let j = 0; j < this.table[i].cells.length; j++) {
           this.table[i].cells[j].isextype = this.table[i].isextype;

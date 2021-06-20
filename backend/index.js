@@ -26,8 +26,8 @@ app.use(cors());
 app.get("/getDirectoryTree", (req, res) => {
   (async () => {
     try {
-      let tree = [];
-      let root = await Directory.find({type: 'r'}).exec();
+      const tree = [];
+      const root = await Directory.find({type: 'r'}).exec();
       for (let i = 0; i < root.length; i++) {
         tree.push(await DirectoryToObject(root[i]));
       }
@@ -39,7 +39,7 @@ app.get("/getDirectoryTree", (req, res) => {
   })();
 });
 async function DirectoryToObject(obj) {
-  let piece = {label: obj.name, value: obj};
+  const piece = {label: obj.name, value: obj};
   if (obj.type === 'l') {
     piece.isleaf = true;
     piece.isnotleaf = false;
@@ -50,7 +50,7 @@ async function DirectoryToObject(obj) {
     if (obj.children.length !== 0) {
       piece.children = [];
       for (let i = 0; i < obj.children.length; i++) {
-        let child = await Directory.findOne({_id: obj.children[i]}).exec();
+        const child = await Directory.findOne({_id: obj.children[i]}).exec();
         piece.children.push(await DirectoryToObject(child));
       }
     }
@@ -61,19 +61,18 @@ async function DirectoryToObject(obj) {
 app.get("/getCellTree", (req, res) => {
   (async () => {
     try {
-      let obj = req.query;
-      let tree = [];
-      let parentDirectory = await Directory.findOne({_id: obj.parentDirectory}).exec();
+      const obj = req.query;
+      const tree = [];
+      const parentDirectory = await Directory.findOne({_id: obj.parentDirectory}).exec();
       if (parentDirectory.cells.length !== 0) {
-        let root = (await Directory.aggregate([
+        const root = (await Directory.aggregate([
           {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
           {$unwind: "$cells"},
           {$match: {"cells.layer": 0}},
           {$group: {_id: "$_id", data: {$push: "$cells"}}}
         ]).exec())[0].data;
         for (let i = 0; i < root.length; i++) {
-          let rootObj = await CellToObject(root[i], obj.parentDirectory);
-          tree.push(rootObj);
+          tree.push(await CellToObject(root[i], obj.parentDirectory).exec());
         }
       }
       res.json(tree);
@@ -84,10 +83,10 @@ app.get("/getCellTree", (req, res) => {
   })();
 });
 async function CellToObject(obj, parentDirectory) {
-  let piece = {label: obj.label, id: obj._id, value: obj};
+  const piece = {label: obj.label, id: obj._id, value: obj};
   piece.children = [];
   for (let i = 0; i < obj.children.length; i++) {
-    let child = (await Directory.aggregate([
+    const child = (await Directory.aggregate([
       {$match: {_id: mongoose.Types.ObjectId(parentDirectory)}},
       {$unwind: "$cells"},
       {$match: {"cells._id": mongoose.Types.ObjectId(obj.children[i])}},
@@ -101,18 +100,18 @@ async function CellToObject(obj, parentDirectory) {
 app.get("/getCellLayer", (req, res) => {
   (async () => {
     try {
-      let obj = req.query;
-      let cellLayer = [];
-      let layerLength = (await Directory.aggregate([
+      const obj = req.query;
+      const cellLayer = [];
+      const layerLength = (await Directory.aggregate([
         {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
         {$unwind: "$cells"},
         {$group: {_id: "$cells.layer"}}
       ]).exec()).length;
-      let isextype = obj.isextype === 'true';
+      const isextype = obj.isextype === 'true';
       for (let i = 0; i < layerLength; i++) {
-        let temp = {label: ('Layer' + i)};
+        const temp = {label: ('Layer' + i)};
         if (isextype) {
-          let oneOfLayer = (await Directory.aggregate([
+          const oneOfLayer = (await Directory.aggregate([
             {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
             {$unwind: "$cells"},
             {$match: {"cells.layer": i, "cells.isnumerical": false}},
@@ -144,8 +143,8 @@ app.get("/getCellLayer", (req, res) => {
 app.post("/addDirectory", (req, res) => {
   (async () => {
     try {
-      let obj = req.body;
-      let directory = new Directory();
+      const obj = req.body;
+      const directory = new Directory();
       directory.type = obj.type;
       if (obj.type != 'r') {
         directory.parent = obj.parent;
@@ -166,7 +165,7 @@ app.post("/addDirectory", (req, res) => {
 app.post("/renameDirectory", (req, res) => {
   (async () => {
     try {
-      let obj = req.body;
+      const obj = req.body;
       res.json(await Directory.updateOne(
         {_id: obj.id},
         {name: obj.name}
@@ -181,8 +180,8 @@ app.post("/renameDirectory", (req, res) => {
 app.post("/migrateDirectory", (req, res) => {
   (async () => {
     try {
-      let obj = req.body;
-      let target = await Directory.findOne({_id: obj.id}).exec();
+      const obj = req.body;
+      const target = await Directory.findOne({_id: obj.id}).exec();
       await Directory.updateOne(
         {_id: target.parent},
         {$pull: {children: obj.id}}
@@ -205,8 +204,8 @@ app.post("/migrateDirectory", (req, res) => {
 app.delete("/deleteDirectory", (req, res) => {
   (async () => {
     try {
-      let obj = req.body;
-      let target = await Directory.findOne({_id: obj.id}).exec();
+      const obj = req.body;
+      const target = await Directory.findOne({_id: obj.id}).exec();
       if (target.children.length === 0) {
         if (target.type !== 'r') {
           await Directory.updateOne(

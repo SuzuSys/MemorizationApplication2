@@ -581,11 +581,11 @@ export default {
     },
 
     handleChangeTargetDirectory(data) {
-      let obj = data[data.length - 1];
-      this.directory_target_id = obj._id;
-      this.directory_target_label = obj.name;
-      this.directory_target_type = obj.type;
-      this.directory_target_children_isempty = obj.children.length === 0;
+      const target_obj = data[data.length - 1];
+      this.directory_target_id = target_obj._id;
+      this.directory_target_label = target_obj.name;
+      this.directory_target_type = target_obj.type;
+      this.directory_target_children_isempty = target_obj.children.length === 0;
       this.selected_directory_target = true;
       this.renaming_directory.name = this.directory_target_label;
       if (this.directory_target_type === 'l') {
@@ -601,7 +601,7 @@ export default {
     },
 
     addDirectory() {
-      let obj = {
+      const obj = {
         type: this.adding_directory.type,
         name: this.adding_directory.name,
         parent: this.directory_target_id
@@ -625,7 +625,7 @@ export default {
       });
     },
     renameDirectory() {
-      let obj = {
+      const obj = {
         id: this.directory_target_id,
         name: this.renaming_directory.name
       };
@@ -648,7 +648,7 @@ export default {
       });
     },
     handleChangeMigratingDirectory(data) {
-      let obj = data[data.length - 1];
+      const obj = data[data.length - 1];
       this.migrating_directory.to_id = obj._id;
     },
     migrateDirectory() {
@@ -659,7 +659,7 @@ export default {
         });
       }
       else {
-        let obj = {
+        const obj = {
           id: this.directory_target_id,
           to: this.migrating_directory.to_id
         };
@@ -688,7 +688,7 @@ export default {
     },
     deleteDirectory() {
       this.delete_directory_dialog = false;
-      let obj = {id: this.directory_target_id};
+      const obj = {id: this.directory_target_id};
       Database.Base().delete("/deleteDirectory", {data: obj}).then(result => {
         if (result.status === 200) {
           this.$notify({
@@ -723,7 +723,7 @@ export default {
     },
 
     addCell() {
-      let obj = {
+      const obj = {
         parentDirectory: this.directory_target_id,
         label: this.adding_cell.label,
         isnumerical: this.adding_cell.isnumerical,
@@ -774,7 +774,7 @@ export default {
       }
     },
     correctCell() {
-      let obj = {
+      const obj = {
         parentDirectory: this.directory_target_id,
         id: this.cell_target_id,
         label: this.correcting_cell.label,
@@ -803,7 +803,7 @@ export default {
       });
     },
     deleteCell() {
-      let obj = {
+      const obj = {
         parentDirectory: this.directory_target_id,
         id: this.cell_target_id
       };
@@ -841,7 +841,7 @@ export default {
       this.$router.push({ path: '/' });
     },
     testSendImage() {
-      let imageList = [];
+      const imageList = [];
       for (let i = 0; i < this.fileList.length; i++) {
         imageList.push(this.fileList[i].raw)
       }
