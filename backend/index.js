@@ -6,7 +6,7 @@ const schema_obj = require("./models/module");
 const Cell = schema_obj.cell;
 const Directory = schema_obj.directory;
 // begin{debug setting}
-const fs = require("fs");
+const fs = require("fs-extra");
 const out = fs.createWriteStream("info.log");
 const logger = new console.Console(out);
 logger.log('Can you looking this sentence?');
@@ -23,8 +23,23 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(cors());
 
+app.get("/getDirectoryTree", (req, res) => {
+  (async () => {
+    try {
+      const tree = [];
+      const root = await Directory.find({type: 'r'}).exec();
+      for (let i = 0; i < root.length; i++) {
+        tree.push(await DirectoryToObject(root[i]));
+      }
+      res.json(tree);
+    } catch (err) {
+      logger.log(err);
+      res.status(500).send("faild");
+    }
+  })();
+});
 async function DirectoryToObject(obj) {
-  let piece = {label: obj.name, value: obj};
+  const piece = {label: obj.name, value: obj};
   if (obj.type === 'l') {
     piece.isleaf = true;
     piece.isnotleaf = false;
@@ -35,7 +50,7 @@ async function DirectoryToObject(obj) {
     if (obj.children.length !== 0) {
       piece.children = [];
       for (let i = 0; i < obj.children.length; i++) {
-        let child = await Directory.findOne({_id: obj.children[i]}).exec();
+        const child = await Directory.findOne({_id: obj.children[i]}).exec();
         piece.children.push(await DirectoryToObject(child));
       }
     }
@@ -43,11 +58,35 @@ async function DirectoryToObject(obj) {
   return piece;
 }
 
+app.get("/getCellTree", (req, res) => {
+  (async () => {
+    try {
+      const obj = req.query;
+      const tree = [];
+      const parentDirectory = await Directory.findOne({_id: obj.parentDirectory}).exec();
+      if (parentDirectory.cells.length !== 0) {
+        const root = (await Directory.aggregate([
+          {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
+          {$unwind: "$cells"},
+          {$match: {"cells.layer": 0}},
+          {$group: {_id: "$_id", data: {$push: "$cells"}}}
+        ]).exec())[0].data;
+        for (let i = 0; i < root.length; i++) {
+          tree.push(await CellToObject(root[i], obj.parentDirectory));
+        }
+      }
+      res.json(tree);
+    } catch (err) {
+      logger.log(err);
+      res.status(500).send("faild");
+    }
+  })();
+});
 async function CellToObject(obj, parentDirectory) {
-  let piece = {label: obj.label, id: obj._id, value: obj};
+  const piece = {label: obj.label, id: obj._id, value: obj};
   piece.children = [];
   for (let i = 0; i < obj.children.length; i++) {
-    let child = (await Directory.aggregate([
+    const child = (await Directory.aggregate([
       {$match: {_id: mongoose.Types.ObjectId(parentDirectory)}},
       {$unwind: "$cells"},
       {$match: {"cells._id": mongoose.Types.ObjectId(obj.children[i])}},
@@ -57,20 +96,236 @@ async function CellToObject(obj, parentDirectory) {
   }
   return piece;
 }
-// dest: 'uploads/'
-const upload = multer({
-  dest: 'uploads/',
-  changeDest: function(dest, req, res) {
-    logger.log('dest!!!!!!!!!!');
-    logger.log(dest);
-    return dest;
-  }
-});
-app.post("/ImageFileSystem", upload.single('file'), (req, res) => {
+
+app.get("/getCellLayer", (req, res) => {
   (async () => {
     try {
-      logger.log(req.file);
+      const obj = req.query;
+      const cellLayer = [];
+      const layerLength = (await Directory.aggregate([
+        {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
+        {$unwind: "$cells"},
+        {$group: {_id: "$cells.layer"}}
+      ]).exec()).length;
+      const isextype = obj.isextype === 'true';
+      for (let i = 0; i < layerLength; i++) {
+        const temp = {label: ('Layer' + i)};
+        if (isextype) {
+          const oneOfLayer = (await Directory.aggregate([
+            {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
+            {$unwind: "$cells"},
+            {$match: {"cells.layer": i, "cells.isnumerical": false}},
+            {$group: {_id: "$_id", data: {$push: "$cells"}}}
+          ]).exec());
+          temp.disabled = oneOfLayer.length === 0;
+          if (temp.disabled) temp.value = [];
+          else temp.value = oneOfLayer[0].data;
+        }
+        else {
+          temp.value = (await Directory.aggregate([
+            {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
+            {$unwind: "$cells"},
+            {$match: {"cells.layer": i}},
+            {$group: {_id: "$_id", data: {$push: "$cells"}}}
+          ]).exec())[0].data;
+          temp.disabled = false;
+        }
+        cellLayer.push(temp);
+      }
+      res.json(cellLayer);
+    } catch (err) {
+      logger.log(err);
+      res.status(500).send("faild");
+    }
+  })();
+});
+
+app.post("/addDirectory", (req, res) => {
+  (async () => {
+    try {
+      const obj = req.body;
+      const directory = new Directory();
+      directory.type = obj.type;
+      if (obj.type != 'r') {
+        directory.parent = obj.parent;
+        await Directory.updateOne(
+          {_id: obj.parent},
+          {$addToSet: {children: directory._id}}
+        ).exec();
+      }
+      directory.name = obj.name;
+      res.json(await directory.save());
+    } catch (err) {
+      logger.log(err);
+      res.status(500).send("faild");
+    }
+  })();
+});
+
+app.post("/renameDirectory", (req, res) => {
+  (async () => {
+    try {
+      const obj = req.body;
+      res.json(await Directory.updateOne(
+        {_id: obj.id},
+        {name: obj.name}
+      ).exec());
+    } catch (err) {
+      logger.log(err);
+      res.status(500).send("faild");
+    }
+  })();
+});
+
+app.post("/migrateDirectory", (req, res) => {
+  (async () => {
+    try {
+      const obj = req.body;
+      const target = await Directory.findOne({_id: obj.id}).exec();
+      await Directory.updateOne(
+        {_id: target.parent},
+        {$pull: {children: obj.id}}
+      ).exec();
+      await Directory.updateOne(
+        {_id: obj.to},
+        {$addToSet: {children: obj.id}}
+      ).exec();
+      res.json(await Directory.updateOne(
+        {_id: obj.id},
+        {parent: obj.to}
+      ).exec());
+    } catch (err) {
+      logger.log(err);
+      res.status(500).send("faild");
+    }
+  })();
+});
+
+app.delete("/deleteDirectory", (req, res) => {
+  (async () => {
+    try {
+      const obj = req.body;
+      const target = await Directory.findOne({_id: obj.id}).exec();
+      if (target.children.length === 0) {
+        if (target.type !== 'r') {
+          await Directory.updateOne(
+            {_id: target.parent},
+            {$pull: {children: obj.id}}
+          ).exec();
+        }
+        res.json(await Directory.deleteOne({_id: obj.id}).exec());
+      }
+      else throw new Error();
+    } catch (err) {
+      logger.log(err);
+      res.status(500).send("faild");
+    }
+  })();
+});
+
+app.post("/addCell", (req, res) => {
+  (async () => {
+    try {
+      const obj = req.body;
+      const cell = new Cell();
+      if (obj.isRoot) {
+        cell.layer = 0;
+      }
+      else {
+        cell.parent = obj.parent;
+        const parent = (await Directory.aggregate([
+          {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
+          {$unwind: "$cells"},
+          {$match: {"cells._id": mongoose.Types.ObjectId(obj.parent)}},
+          {$group: {_id: "$_id", data: {$push: "$cells"}}}
+        ]).exec())[0].data[0];
+        await Directory.updateOne(
+          {_id: obj.parentDirectory},
+          {$pull: {cells: {_id: obj.parent}}}
+        ).exec();
+        parent.children.push(cell._id);
+        await Directory.updateOne(
+          {_id: obj.parentDirectory},
+          {$addToSet: {cells: parent}}
+        ).exec();
+        cell.layer = parent.layer + 1;
+      }
+      cell.parentDirectory = obj.parentDirectory;
+      cell.label = obj.label;
+      cell.isnumerical = obj.isnumerical;
+      cell.x = obj.x;
+      cell.x_class = obj.x_class;
+      cell.y = obj.y;
+      cell.y_class = obj.y_class;
+      cell.img = [];
+      res.json(await Directory.updateOne(
+        {_id: obj.parentDirectory},
+        {$addToSet: {cells: cell}}
+      ).exec());
+    } catch (err) {
+      logger.log(err);
+      res.status(500).send("faild");
+    }
+  })();
+})
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'image_temp/');
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname)
+  }
+});
+const upload = multer({storage: storage});
+app.post("/addCellWithImage", upload.array('file[]'), (req, res) => {
+  (async () => {
+    try {
+      logger.log(req.files);
       logger.log(req.body);
+
+      const obj = req.body;
+      const cell = new Cell();
+      if (obj.isRoot) {
+        cell.layer = 0;
+      }
+      else {
+        cell.parent = obj.parent;
+        const parent = (await Directory.aggregate([
+          {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
+          {$unwind: "$cells"},
+          {$match: {"cells._id": mongoose.Types.ObjectId(obj.parent)}},
+          {$group: {_id: "$_id", data: {$push: "$cells"}}}
+        ]).exec())[0].data[0];
+        await Directory.updateOne(
+          {_id: obj.parentDirectory},
+          {$pull: {cells: {_id: obj.parent}}}
+        ).exec();
+        parent.children.push(cell._id);
+        await Directory.updateOne(
+          {_id: obj.parentDirectory},
+          {$addToSet: {cells: parent}}
+        ).exec();
+        cell.layer = parent.layer + 1;
+      }
+      cell.parentDirectory = obj.parentDirectory;
+      cell.label = obj.label;
+      cell.isnumerical = obj.isnumerical;
+      cell.x = obj.x;
+      cell.x_class = obj.x_class;
+      cell.y = obj.y;
+      cell.y_class = obj.y_class;
+      const images = [];
+      for (let i = 0; i < req.files.length; i++) {
+        images.push(req.files[i].originalname);
+        // fs.moveSync()
+      }
+      cell.img = images;
+
+      res.json(await Directory.updateOne(
+        {_id: obj.parentDirectory},
+        {$addToSet: {cells: cell}}
+      ).exec());
     } catch (err) {
       logger.log(err);
     }

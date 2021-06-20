@@ -129,7 +129,7 @@
                           action="" 
                           :on-change="handleAddImage"
                           :on-remove="handleRemoveImage"
-                          :file-list="fileList" 
+                          :file-list="adding_cell.file_list" 
                           list-type="picture"
                           :auto-upload="false">
                             <el-button size="mini" type="primary">Click to upload</el-button>
@@ -147,7 +147,7 @@
                         icon="el-icon-check"
                         size="medium">
                           Submit
-                        </el-button>
+                      </el-button>
                     </el-form-item>
                 </el-form>
               </el-col>
@@ -422,8 +422,9 @@
 </template>
 
 <script>
-import Database from '../api/methods'
-import Question from "../components/Question"
+import DatabasePrototype from '../api/methods'
+import Question from '../components/Question'
+import Database from '../apicreate'
 export default {
   name: 'Create',
   components: {
@@ -488,7 +489,8 @@ export default {
         x: '',
         x_class: '',
         y: '',
-        y_class: ''
+        y_class: '',
+        file_list: []
       },
 
       reload_question_key_for_correct: 0,
@@ -499,9 +501,7 @@ export default {
         x_class: '',
         y: '',
         y_class: ''
-      },
-
-      fileList: []
+      }
     }
   },
   methods: {
@@ -528,16 +528,17 @@ export default {
       this.cell_target_children_isempty = false;
       this.show_directory_tree = false;
       this.show_migrating_directory_tree = false;
-      Database.getDirectoryTree().then(resolve => {
-        this.directory_tree = resolve.data;
+      Database.Base().get('/getDirectoryTree').then(result => {
+        this.directory_tree = result.data;
         this.show_directory_tree = true;
         this.show_migrating_directory_tree = true;
       });
     },
     resetCellTreeForAdd() {
       this.selected_leaf_directory_target = false;
-      Database.getCellTree(this.directory_target_id).then(resolve => {
-        this.cell_tree = resolve.data;
+      const obj = {parentDirectory: this.directory_target_id};
+      Database.Base().get('/getCellTree', {params: obj}).then(result => {
+        this.cell_tree = result.data;
         this.selected_leaf_directory_target = true;
       });
     },
@@ -549,10 +550,11 @@ export default {
       this.cell_target_y = this.correcting_cell.y;
       this.cell_target_y_class = this.correcting_cell.y_class;
       this.reload_question_key_for_target++;
-      Database.getCellTree(this.directory_target_id).then(resolve => {
-        this.cell_tree = resolve.data;
+      const obj = {parentDirectory: this.directory_target_id};
+      Database.Base().get('/getCellTree', {params: obj}).then(result => {
+        this.cell_tree = result.data;
         this.selected_leaf_directory_target = true;
-      });
+      })
     },
     resetCellTreeForDelete() {
       this.selected_leaf_directory_target = false;
@@ -567,23 +569,25 @@ export default {
       this.cell_target_children_isempty = false;
       this.correcting_cell.isnumerical = false;
       this.active_cell_mode = '';
-      Database.getCellTree(this.directory_target_id).then(resolve => {
-        this.cell_tree = resolve.data;
+      const obj = {parentDirectory: this.directory_target_id};
+      Database.Base().get('/getCellTree', {params: obj}).then(result => {
+        this.cell_tree = result.data;
         this.selected_leaf_directory_target = true;
-      })
+      });
     },
 
     handleChangeTargetDirectory(data) {
-      let obj = data[data.length - 1];
-      this.directory_target_id = obj._id;
-      this.directory_target_label = obj.name;
-      this.directory_target_type = obj.type;
-      this.directory_target_children_isempty = obj.children.length === 0;
+      const target_obj = data[data.length - 1];
+      this.directory_target_id = target_obj._id;
+      this.directory_target_label = target_obj.name;
+      this.directory_target_type = target_obj.type;
+      this.directory_target_children_isempty = target_obj.children.length === 0;
       this.selected_directory_target = true;
       this.renaming_directory.name = this.directory_target_label;
       if (this.directory_target_type === 'l') {
-        Database.getCellTree(this.directory_target_id).then(resolve => {
-          this.cell_tree = resolve.data;
+        const obj = {parentDirectory: this.directory_target_id};
+        Database.Base().get('/getCellTree', {params: obj}).then(result => {
+          this.cell_tree = result.data;
           this.selected_leaf_directory_target = true;
         });
       }
@@ -593,12 +597,12 @@ export default {
     },
 
     addDirectory() {
-      let obj = {
+      const obj = {
         type: this.adding_directory.type,
         name: this.adding_directory.name,
         parent: this.directory_target_id
       };
-      Database.addDirectory(obj).then(result => {
+      Database.Base().post("/addDirectory", obj).then(result => {
         if (result.status === 200) {
           this.$notify({
             title: 'Success',
@@ -617,8 +621,11 @@ export default {
       });
     },
     renameDirectory() {
-      let obj = {id: this.directory_target_id, name: this.renaming_directory.name};
-      Database.renameDirectory(obj).then(result => {
+      const obj = {
+        id: this.directory_target_id,
+        name: this.renaming_directory.name
+      };
+      Database.Base().post("/renameDirectory", obj).then(result => {
         if (result.status === 200) {
           this.$notify({
             title: 'Success',
@@ -637,31 +644,39 @@ export default {
       });
     },
     handleChangeMigratingDirectory(data) {
-      let obj = data[data.length - 1];
+      const obj = data[data.length - 1];
       this.migrating_directory.to_id = obj._id;
     },
     migrateDirectory() {
-      let obj = {
-        id: this.directory_target_id,
-        to: this.migrating_directory.to_id
-      };
-      Database.migrateDirectory(obj).then(result => {
-        if (result.status === 200) {
-          this.$notify({
-            title: 'Success',
-            message: 'Successfully migrated directory',
-            type: 'success'
-          });
-          this.resetDirectoryTree();
-        }
-        else {
-          this.$notify({
-            title: 'Error',
-            message: 'Could not migrate directory successfully',
-            type: 'error'
-          });
-        }
-      });
+      if (this.directory_target_id === this.migrating_directory.to_id) {
+        this.$message({
+          message: 'The requested operation is invalid.',
+          type: 'error'
+        });
+      }
+      else {
+        const obj = {
+          id: this.directory_target_id,
+          to: this.migrating_directory.to_id
+        };
+        Database.Base().post("/migrateDirectory", obj).then(result => {
+          if (result.status === 200) {
+            this.$notify({
+              title: 'Success',
+              message: 'Successfully migrated directory',
+              type: 'success'
+            });
+            this.resetDirectoryTree();
+          }
+          else {
+            this.$notify({
+              title: 'Error',
+              message: 'Could not migrate directory successfully',
+              type: 'error'
+            });
+          }
+        });
+      }
     },
     deleteDirectoryDialog() {
       if (this.directory_target_type === 'l') this.delete_directory_dialog = true;
@@ -669,8 +684,8 @@ export default {
     },
     deleteDirectory() {
       this.delete_directory_dialog = false;
-      let obj = {id: this.directory_target_id};
-      Database.deleteDirectory(obj).then(result => {
+      const obj = {id: this.directory_target_id};
+      Database.Base().delete("/deleteDirectory", {data: obj}).then(result => {
         if (result.status === 200) {
           this.$notify({
             title: 'Success',
@@ -704,58 +719,61 @@ export default {
     },
 
     addCell() {
-      let obj = {
-        parentDirectory: this.directory_target_id,
-        label: this.adding_cell.label,
-        isnumerical: this.adding_cell.isnumerical,
-        x: this.adding_cell.x,
-        x_class: this.adding_cell.x_class,
-        y: this.adding_cell.y,
-        y_class: this.adding_cell.y_class
-      };
-      if (this.adding_cell.type === 'r') {
-        Database.addRootCell(obj).then(result => {
-          if (result.status === 200) {
-            this.$notify({
-              title: 'Success',
-              message: 'Successfully added cell',
-              type: 'success'
-            });
-            this.resetCellTreeForAdd();
-          }
-          else {
-            this.$notify({
-              title: 'Error',
-              message: 'Could not add cell successfully',
-              type: 'error'
-            });
-          }
-        })
+      if (this.adding_cell.file_list.length === 0) {
+        const obj = {
+          parentDirectory: this.directory_target_id,
+          label: this.adding_cell.label,
+          isnumerical: this.adding_cell.isnumerical,
+          x: this.adding_cell.x,
+          x_class: this.adding_cell.x_class,
+          y: this.adding_cell.y,
+          y_class: this.adding_cell.y_class,
+          isRoot: this.adding_cell.type === 'r'
+        };
+        if (this.adding_cell.type !== 'r') {
+          obj.parent = this.cell_target_id;
+        }
+        Database.Base().post('/addCell', obj).then(this.notifyForAddCell);
       }
       else {
-        if (this.cell_target_id === '') return;
-        obj.parent = this.cell_target_id;
-        Database.addNodeCell(obj).then(result => {
-          if (result.status === 200) {
-            this.$notify({
-              title: 'Success',
-              message: 'Successfully added cell',
-              type: 'success'
-            });
-            this.resetCellTreeForAdd();
+        const formData = new FormData();
+        formData.append('parentDirectory', this.directory_target_id);
+        formData.append('label', this.adding_cell.label);
+        formData.append('isnumerical', this.adding_cell.isnumerical);
+        formData.append('x', this.adding_cell.x);
+        formData.append('x_class', this.adding_cell.x_class);
+        formData.append('y', this.adding_cell.y);
+        formData.append('y_class', this.adding_cell.y_class);
+        formData.append('isRoot', this.adding_cell.type === 'r');
+        for (let i = 0; i < this.adding_cell.file_list.length; i++) {
+          formData.append('file[]', this.adding_cell.file_list[i].raw);
+        }
+        Database.Base().post('/addCellWithImage', formData, {
+          headers: {
+            'content-type': 'multipart/form-data'
           }
-          else {
-            this.$notify({
-              title: 'Error',
-              message: 'Could not add cell successfully',
-              type: 'error'
-            });
-          }
+        }).then(this.notifyForAddCell);
+      }
+    },
+    notifyForAddCell(result) {
+      if (result.status === 200) {
+        this.$notify({
+          title: 'Success',
+          message: 'Successfully added cell',
+          type: 'success'
+        });
+        this.resetCellTreeForAdd();
+      }
+      else {
+        this.$notify({
+          title: 'Error',
+          message: 'Could not add cell successfully',
+          type: 'error'
         });
       }
     },
     correctCell() {
-      let obj = {
+      const obj = {
         parentDirectory: this.directory_target_id,
         id: this.cell_target_id,
         label: this.correcting_cell.label,
@@ -765,7 +783,7 @@ export default {
         y: this.correcting_cell.y,
         y_class: this.correcting_cell.y_class
       };
-      Database.correctCell(obj).then(result => {
+      DatabasePrototype.correctCell(obj).then(result => {
         if (result.status === 200) {
           this.$notify({
             title: 'Success',
@@ -784,11 +802,11 @@ export default {
       });
     },
     deleteCell() {
-      let obj = {
+      const obj = {
         parentDirectory: this.directory_target_id,
         id: this.cell_target_id
       };
-      Database.deleteCell(obj).then(result => {
+      DatabasePrototype.deleteCell(obj).then(result => {
         if (result.status === 200) {
           this.$notify({
             title: 'Success',
@@ -813,18 +831,17 @@ export default {
       this.reload_question_key_for_correct++;
     },
     handleAddImage(file, fileList) {
-      this.fileList = fileList;
-      Database.postFormData(fileList[0].raw);
+      this.adding_cell.file_list = fileList;
     },
     handleRemoveImage(file, fileList) {
-      this.fileList = fileList;
+      this.adding_cell.file_list = fileList;
     },
     goTop() {
       this.$router.push({ path: '/' });
     }
   },
   created: async function () {
-    this.directory_tree = (await Database.getDirectoryTree()).data;
+    this.directory_tree = (await Database.Base().get('/getDirectoryTree')).data;
   }
 }
 </script>
