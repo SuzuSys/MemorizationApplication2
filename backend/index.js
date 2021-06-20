@@ -6,7 +6,7 @@ const schema_obj = require("./models/module");
 const Cell = schema_obj.cell;
 const Directory = schema_obj.directory;
 // begin{debug setting}
-const fs = require("fs");
+const fs = require("fs-extra");
 const out = fs.createWriteStream("info.log");
 const logger = new console.Console(out);
 logger.log('Can you looking this sentence?');
@@ -269,56 +269,9 @@ app.post("/addCell", (req, res) => {
   })();
 })
 
-let cell_id_for_folder_name = '';
-async function addCellReturnId(obj, files) {
-  if (cell_id_for_folder_name !== '') return;
-  const cell = new Cell();
-  if (obj.isRoot) {
-    cell.layer = 0;
-  }
-  else {
-    cell.parent = obj.parent;
-    const parent = (await Directory.aggregate([
-      {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
-      {$unwind: "$cells"},
-      {$match: {"cells._id": mongoose.Types.ObjectId(obj.parent)}},
-      {$group: {_id: "$_id", data: {$push: "$cells"}}}
-    ]).exec())[0].data[0];
-    await Directory.updateOne(
-      {_id: obj.parentDirectory},
-      {$pull: {cells: {_id: obj.parent}}}
-    ).exec();
-    parent.children.push(cell._id);
-    await Directory.updateOne(
-      {_id: obj.parentDirectory},
-      {$addToSet: {cells: parent}}
-    ).exec();
-    cell.layer = parent.layer + 1;
-  }
-  cell.parentDirectory = obj.parentDirectory;
-  cell.label = obj.label;
-  cell.isnumerical = obj.isnumerical;
-  cell.x = obj.x;
-  cell.x_class = obj.x_class;
-  cell.y = obj.y;
-  cell.y_class = obj.y_class;
-  const images = [];
-  for (let i = 0; i < files; i++) {
-    if (files[i].originalname === null) throw new Error();
-    images.push(files[i].originalname);
-  }
-  cell.img = images;
-  await Directory.updateOne(
-    {_id: obj.parentDirectory},
-    {$addToSet: {cells: cell}}
-  ).exec();
-  cell_id_for_folder_name = cell._id;
-}
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    addCellReturnId(req.body, req.files).then(() => {
-      cb(null, 'image/' + cell_id_for_folder_name + '/');
-    });
+    cb(null, 'image_temp/');
   },
   filename: function (req, file, cb) {
     cb(null, file.originalname)
@@ -330,7 +283,49 @@ app.post("/addCellWithImage", upload.array('file[]'), (req, res) => {
     try {
       logger.log(req.files);
       logger.log(req.body);
-      cell_id_for_folder_name = '';
+
+      const obj = req.body;
+      const cell = new Cell();
+      if (obj.isRoot) {
+        cell.layer = 0;
+      }
+      else {
+        cell.parent = obj.parent;
+        const parent = (await Directory.aggregate([
+          {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
+          {$unwind: "$cells"},
+          {$match: {"cells._id": mongoose.Types.ObjectId(obj.parent)}},
+          {$group: {_id: "$_id", data: {$push: "$cells"}}}
+        ]).exec())[0].data[0];
+        await Directory.updateOne(
+          {_id: obj.parentDirectory},
+          {$pull: {cells: {_id: obj.parent}}}
+        ).exec();
+        parent.children.push(cell._id);
+        await Directory.updateOne(
+          {_id: obj.parentDirectory},
+          {$addToSet: {cells: parent}}
+        ).exec();
+        cell.layer = parent.layer + 1;
+      }
+      cell.parentDirectory = obj.parentDirectory;
+      cell.label = obj.label;
+      cell.isnumerical = obj.isnumerical;
+      cell.x = obj.x;
+      cell.x_class = obj.x_class;
+      cell.y = obj.y;
+      cell.y_class = obj.y_class;
+      const images = [];
+      for (let i = 0; i < req.files.length; i++) {
+        images.push(req.files[i].originalname);
+        // fs.moveSync()
+      }
+      cell.img = images;
+
+      res.json(await Directory.updateOne(
+        {_id: obj.parentDirectory},
+        {$addToSet: {cells: cell}}
+      ).exec());
     } catch (err) {
       logger.log(err);
     }
