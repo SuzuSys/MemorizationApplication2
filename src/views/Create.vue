@@ -169,7 +169,9 @@
                   :y_class="adding_cell.y_class"
                   :isextype="false"
                   :show_answer="true"
-                  :alone="true" />
+                  :alone="true"
+                  :carryImg="false"
+                  :blob="adding_cell.blob" />
               </el-col>
             </el-row>
             <el-row v-show="active_cell_mode === 'correct'">
@@ -490,7 +492,8 @@ export default {
         x_class: '',
         y: '',
         y_class: '',
-        file_list: []
+        file_list: [],
+        blob: {}
       },
 
       reload_question_key_for_correct: 0,
@@ -832,6 +835,10 @@ export default {
     },
     handleAddImage(file, fileList) {
       this.adding_cell.file_list = fileList;
+      console.log(file.raw);
+      const key = 'F_' + file.raw.name.split('.')[0];
+      this.adding_cell.blob[key] = window.URL.createObjectURL(file.raw);
+      this.adding_cell.x += '%{' + key + '}';
     },
     handleRemoveImage(file, fileList) {
       this.adding_cell.file_list = fileList;

@@ -330,6 +330,20 @@ app.post("/addCellWithImage", upload.array('file[]'), (req, res) => {
       ).exec());
     } catch (err) {
       logger.log(err);
+      res.status(500).send("faild");
+    }
+  })();
+});
+
+app.get("/getImage", (req, res) => {
+  (async () => {
+    try {
+      const obj = req.body;
+      const url = './image/' + obj.id + '/' + obj.filename;
+      res.status(200).send(fs.readFileSync(url));
+    } catch (err) {
+      logger.log(err);
+      res.status(500).send("faild");
     }
   })();
 });
