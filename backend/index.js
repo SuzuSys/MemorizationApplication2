@@ -274,16 +274,13 @@ const storage = multer.diskStorage({
     cb(null, 'image_temp/');
   },
   filename: function (req, file, cb) {
-    cb(null, file.originalname)
+    cb(null, file.originalname);
   }
 });
 const upload = multer({storage: storage});
 app.post("/addCellWithImage", upload.array('file[]'), (req, res) => {
   (async () => {
     try {
-      logger.log(req.files);
-      logger.log(req.body);
-
       const obj = req.body;
       const cell = new Cell();
       if (obj.isRoot) {
@@ -316,12 +313,17 @@ app.post("/addCellWithImage", upload.array('file[]'), (req, res) => {
       cell.y = obj.y;
       cell.y_class = obj.y_class;
       const images = [];
+      const to_dest = 'image/' + cell._id + '/';
+      fs.mkdirsSync(to_dest);
+      let present_url, to_url, file_name;
       for (let i = 0; i < req.files.length; i++) {
-        images.push(req.files[i].originalname);
-        // fs.moveSync()
+        file_name = req.files[i].originalname;
+        images.push(file_name);
+        present_url = 'image_temp/' + file_name;
+        to_url = to_dest + file_name;
+        fs.moveSync(present_url, to_url);
       }
       cell.img = images;
-
       res.json(await Directory.updateOne(
         {_id: obj.parentDirectory},
         {$addToSet: {cells: cell}}
