@@ -69,7 +69,10 @@
                   :y_class="cell_target_y_class"
                   :isextype="false"
                   :show_answer="true"
-                  :alone="true" />
+                  :alone="true"
+                  :carryImg="true"
+                  :id="cell_target_id"
+                  :img="cell_target_img" />
               </el-col>
             </el-row>
             <el-row>
@@ -481,6 +484,7 @@ export default {
       cell_target_y: '',
       cell_target_y_class: '',
       cell_target_label: 'None',
+      cell_target_img: [],
       cell_target_children_isempty: false,
 
       reload_question_key_for_add: 0,
@@ -529,6 +533,7 @@ export default {
       this.cell_target_y = '';
       this.cell_target_y_class = '';
       this.cell_target_children_isempty = false;
+      this.cell_target_img = [];
       this.show_directory_tree = false;
       this.show_migrating_directory_tree = false;
       Database.Base().get('/getDirectoryTree').then(result => {
@@ -717,6 +722,7 @@ export default {
       this.correcting_cell.y_class = this.cell_target_y_class = data.value.y_class;
       this.correcting_cell.isnumerical = data.value.isnumerical;
       this.cell_target_children_isempty = data.value.children.length === 0;
+      this.cell_target_img = data.value.img;
       this.reload_question_key_for_target++;
       this.reload_question_key_for_correct++;
     },
@@ -835,13 +841,18 @@ export default {
     },
     handleAddImage(file, fileList) {
       this.adding_cell.file_list = fileList;
-      console.log(file.raw);
       const key = 'F_' + file.raw.name.split('.')[0];
       this.adding_cell.blob[key] = window.URL.createObjectURL(file.raw);
       this.adding_cell.x += '%{' + key + '}';
+      this.adding_cell.y += '%{' + key + '}';
     },
     handleRemoveImage(file, fileList) {
       this.adding_cell.file_list = fileList;
+      const key = 'F_' + file.raw.name.split('.')[0];
+      window.URL.revokeObjectURL(this.adding_cell.blob[key]);
+      delete this.adding_cell.blob[key];
+      this.adding_cell.x = this.adding_cell.x.replace('%{' + key + '}', '');
+      this.adding_cell.y = this.adding_cell.y.replace('%{' + key + '}', '');
     },
     goTop() {
       this.$router.push({ path: '/' });

@@ -338,7 +338,7 @@ app.post("/addCellWithImage", upload.array('file[]'), (req, res) => {
 app.get("/getImage", (req, res) => {
   (async () => {
     try {
-      const obj = req.body;
+      const obj = req.query;
       const url = './image/' + obj.id + '/' + obj.filename;
       res.status(200).send(fs.readFileSync(url));
     } catch (err) {

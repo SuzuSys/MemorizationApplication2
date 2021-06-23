@@ -74,17 +74,15 @@ export default {
       return str;
     }
   },
-  created: function() {
+  created: async function() {
     if (this.carryImg) {
       let key;
       const obj = {id: this.id};
       for (let i = 0; i < this.img.length; i++) {
         key = 'F_' + this.img[i].split('.')[0];
         obj.filename = this.img[i];
-        Database.Blob().get('/getImage', {params: obj})
-        .then(result => {
-          this.blobUrl[key] = window.URL.createObjectURL(result.data);
-        });
+        const result = await Database.Blob().get('/getImage', {params: obj});
+        this.blobUrl[key] = window.URL.createObjectURL(result.data);
       }
     }
     else {
@@ -96,7 +94,7 @@ export default {
       sentence: {if: false, content: ''}
     };
     let splited, urlkey, temp;
-    const re = /(%{.*?}|\$\$.*?\$\$|\$.*?\$)/;
+    const re = /(%{.+?}|\$\$.+?\$\$|\$.+?\$)/;
     const wrap = [
       {input: this.x, output: this.formated_x},
       {input: this.y, output: this.formated_y}
@@ -123,7 +121,6 @@ export default {
             temp.sentence.content = splited[j];
           }
           wrap[i].output.push(JSON.parse(JSON.stringify(temp)));
-          console.log(JSON.parse(JSON.stringify(temp)));
         }
       }
     }

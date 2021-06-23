@@ -3,7 +3,8 @@ body {
   background-color: #282828;
 }
 .el-textarea__inner, .el-input__inner {
-  font-family:"Microsoft";
+  /*font-family:"Microsoft";*/
+  font-family: note monospace,SFMono-Regular,Consolas,Menlo,Courier,monospace;
   font-size:20px;
 }
 code {
