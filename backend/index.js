@@ -267,7 +267,7 @@ app.post("/addCell", (req, res) => {
       res.status(500).send("faild");
     }
   })();
-})
+});
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -283,7 +283,8 @@ app.post("/addCellWithImage", upload.array('file[]'), (req, res) => {
     try {
       const obj = req.body;
       const cell = new Cell();
-      if (obj.isRoot) {
+      const isRoot = obj.isRoot === 'true';
+      if (isRoot) {
         cell.layer = 0;
       }
       else {

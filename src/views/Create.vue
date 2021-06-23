@@ -754,6 +754,9 @@ export default {
         formData.append('y', this.adding_cell.y);
         formData.append('y_class', this.adding_cell.y_class);
         formData.append('isRoot', this.adding_cell.type === 'r');
+        if (this.adding_cell.type !== 'r') {
+          formData.append('parent', this.cell_target_id);
+        }
         for (let i = 0; i < this.adding_cell.file_list.length; i++) {
           formData.append('file[]', this.adding_cell.file_list[i].raw);
         }

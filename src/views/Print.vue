@@ -186,7 +186,10 @@
             :y_class="item.y_class"
             :isextype="item.isextype"
             :show_answer="show_answer"
-            :alone="false"/>
+            :alone="false"
+            :carryImg="true"
+            :id="item._id"
+            :img="item.img" />
           <el-divider></el-divider>
         </div>
         <div id="footer">
