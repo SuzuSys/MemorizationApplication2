@@ -126,21 +126,19 @@
                       <el-input v-model="adding_cell.y_class"></el-input>
                     </el-form-item>
                     <el-form-item label="image">
-                      <div id="fileUpload">
-                        <el-upload
-                          class="upload-demo"
-                          action="" 
-                          :on-change="handleAddImage"
-                          :on-remove="handleRemoveImage"
-                          :file-list="adding_cell.file_list" 
-                          list-type="picture"
-                          :auto-upload="false">
-                            <el-button size="mini" type="primary">Click to upload</el-button>
-                            <div slot="tip" class="el-upload__tip">
-                              .png
-                            </div>
-                        </el-upload>
-                      </div>
+                      <el-upload
+                        class="upload-demo"
+                        action="" 
+                        :on-change="handleAddImage"
+                        :on-remove="handleRemoveImage"
+                        :file-list="adding_cell.file_list" 
+                        list-type="picture"
+                        :auto-upload="false">
+                          <el-button size="mini" type="primary">Click to upload</el-button>
+                          <div slot="tip" class="el-upload__tip">
+                            .png
+                          </div>
+                      </el-upload>
                     </el-form-item>
                     <el-form-item>
                       <el-button
@@ -207,6 +205,21 @@
                     <el-form-item label="y_class">
                       <el-input v-model="correcting_cell.y_class"></el-input>
                     </el-form-item>
+                    <el-form-item label="image">
+                      <el-upload
+                        class="upload-demo"
+                        action="" 
+                        :on-change="handleAddImageForCorrect"
+                        :on-remove="handleRemoveImageForCorrect"
+                        :file-list="correcting_cell.file_list" 
+                        list-type="picture"
+                        :auto-upload="false">
+                          <el-button size="mini" type="primary">Click to upload</el-button>
+                          <div slot="tip" class="el-upload__tip">
+                            .png
+                          </div>
+                      </el-upload>
+                    </el-form-item>
                     <el-form-item>
                       <el-button
                         type="primary"
@@ -237,7 +250,9 @@
                   :y_class="correcting_cell.y_class"
                   :isextype="false"
                   :show_answer="true"
-                  :alone="true" />
+                  :alone="true"
+                  :carryImg="false"
+                  :blob="correcting_cell.blob" />
               </el-col>
             </el-row>
             <el-row v-show="active_cell_mode === 'delete'">
@@ -507,7 +522,9 @@ export default {
         x: '',
         x_class: '',
         y: '',
-        y_class: ''
+        y_class: '',
+        file_list: [],
+        blob: {}
       }
     }
   },
@@ -712,6 +729,13 @@ export default {
       });
     },
     handleClickCell(data) {
+      const keys = Object.keys(this.correcting_cell.blob);
+      for (let i = 0; i < keys.length; i++) {
+        window.URL.revokeObjectURL(this.correcting_cell.blob[keys[i]]);
+      }
+      this.correcting_cell.blob = {};
+      this.correcting_cell.file_list = [];
+
       this.cell_target_id = data.id;
       this.cell_target_layer = data.value.layer;
       this.selected_cell_target = true;
@@ -724,7 +748,28 @@ export default {
       this.cell_target_children_isempty = data.value.children.length === 0;
       this.cell_target_img = data.value.img;
       this.reload_question_key_for_target++;
-      this.reload_question_key_for_correct++;
+
+      if (this.cell_target_img.length === 0) {
+        this.reload_question_key_for_correct++;
+      }
+      else {
+        (async () => {
+          let key, result, url;
+          const obj = { id: this.cell_target_id };
+          for (let i = 0; i < this.cell_target_img.length; i++) {
+            key = 'F_' + this.cell_target_img[i].split('.')[0];
+            obj.filename = this.cell_target_img[i];
+            result = await Database.Blob().get('/getImage', {params: obj});
+            url = window.URL.createObjectURL(result.data);
+            this.correcting_cell.blob[key] = url;
+            this.correcting_cell.file_list.push({
+              name: this.cell_target_img[i],
+              url: url
+            });
+          }
+          this.reload_question_key_for_correct++;
+        })();
+      }
     },
 
     addCell() {
@@ -856,6 +901,21 @@ export default {
       delete this.adding_cell.blob[key];
       this.adding_cell.x = this.adding_cell.x.replace('%{' + key + '}', '');
       this.adding_cell.y = this.adding_cell.y.replace('%{' + key + '}', '');
+    },
+    handleAddImageForCorrect(file, fileList) {
+      this.correcting_cell.file_list = fileList;
+      const key = 'F_' + file.raw.name.split('.')[0];
+      this.correcting_cell.blob[key] = window.URL.createObjectURL(file.raw);
+      this.correcting_cell.x += '%{' + key + '}';
+      this.correcting_cell.y += '%{' + key + '}';
+    },
+    handleRemoveImageForCorrect(file, fileList) {
+      this.adding_cell.file_list = fileList;
+      const key = 'F_' + file.raw.name.split('.')[0];
+      window.URL.revokeObjectURL(this.correcting_cell.blob[key]);
+      delete this.correcting_cell.blob[key];
+      this.correcting_cell.x = this.correcting_cell.x.replace('%{' + key + '}', '');
+      this.correcting_cell.y = this.correcting_cell.y.replace('%{' + key + '}', '');
     },
     goTop() {
       this.$router.push({ path: '/' });

@@ -76,12 +76,12 @@ export default {
   },
   created: async function() {
     if (this.carryImg) {
-      let key;
+      let key, result;
       const obj = {id: this.id};
       for (let i = 0; i < this.img.length; i++) {
         key = 'F_' + this.img[i].split('.')[0];
         obj.filename = this.img[i];
-        const result = await Database.Blob().get('/getImage', {params: obj});
+        result = await Database.Blob().get('/getImage', {params: obj});
         this.blobUrl[key] = window.URL.createObjectURL(result.data);
       }
     }

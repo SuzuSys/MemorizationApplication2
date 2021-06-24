@@ -23,6 +23,16 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(cors());
 
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'image_temp/');
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname);
+  }
+});
+const upload = multer({storage: storage});
+
 app.get("/getDirectoryTree", (req, res) => {
   (async () => {
     try {
@@ -269,15 +279,6 @@ app.post("/addCell", (req, res) => {
   })();
 });
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'image_temp/');
-  },
-  filename: function (req, file, cb) {
-    cb(null, file.originalname);
-  }
-});
-const upload = multer({storage: storage});
 app.post("/addCellWithImage", upload.array('file[]'), (req, res) => {
   (async () => {
     try {
@@ -342,6 +343,44 @@ app.get("/getImage", (req, res) => {
       const obj = req.query;
       const url = './image/' + obj.id + '/' + obj.filename;
       res.status(200).send(fs.readFileSync(url));
+    } catch (err) {
+      logger.log(err);
+      res.status(500).send("faild");
+    }
+  })();
+});
+
+app.post("/correctCell", (req, res) => {
+  (async () => {
+    try {
+      const obj = req.body;
+      const cell = new Cell();
+      cell._id = obj.id;
+      cell.parentDirectory = obj.parentDirectory;
+      const target = (await Directory.aggregate([
+        {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
+        {$unwind: "$cells"},
+        {$match: {"cells._id": mongoose.Types.ObjectId(obj.id)}},
+        {$group: {_id: "$_id", data: {$push: "$cells"}}}
+      ]).exec())[0].data[0];
+      cell.layer = target.layer;
+      cell.img = target.img;
+      if (target.layer > 0) cell.parent = target.parent;
+      cell.children = target.children;
+      cell.label = obj.label;
+      cell.isnumerical = obj.isnumerical;
+      cell.x = obj.x;
+      cell.x_class = obj.x_class;
+      cell.y = obj.y;
+      cell.y_class = obj.y_class;
+      await Directory.updateOne(
+        {_id: obj.parentDirectory},
+        {$pull: {cells: {_id: obj.id}}}
+      ).exec();
+      res.json(await Directory.updateOne(
+        {_id: obj.parentDirectory},
+        {$addToSet: {cells: cell}}
+      ).exec());
     } catch (err) {
       logger.log(err);
       res.status(500).send("faild");
