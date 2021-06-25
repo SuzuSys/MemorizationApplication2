@@ -88,11 +88,6 @@ export default {
     else {
       this.blobUrl = this.blob;
     }
-    const template = {
-      img: {if: false, url: ''},
-      math: {if: false, content: ''},
-      sentence: {if: false, content: ''}
-    };
     let splited, urlkey, temp;
     const re = /(%{.+?}|\$\$.+?\$\$|\$.+?\$)/;
     const wrap = [
@@ -103,7 +98,11 @@ export default {
       splited = wrap[i].input.split(re);
       for (let j = 0; j < splited.length; j++) {
         if (splited[j] !== '') {
-          temp = JSON.parse(JSON.stringify(template));
+          temp = {
+            img: {if: false, url: ''},
+            math: {if: false, content: ''},
+            sentence: {if: false, content: ''}
+          };
           if (
             splited[j][0] === '$'
             && splited[j].slice(-1) === '$'
@@ -120,7 +119,7 @@ export default {
             temp.sentence.if = true;
             temp.sentence.content = splited[j];
           }
-          wrap[i].output.push(JSON.parse(JSON.stringify(temp)));
+          wrap[i].output.push(temp);
         }
       }
     }

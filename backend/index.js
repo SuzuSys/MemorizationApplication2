@@ -118,21 +118,22 @@ app.get("/getCellLayer", (req, res) => {
         {$group: {_id: "$cells.layer"}}
       ]).exec()).length;
       const isextype = obj.isextype === 'true';
+      let temp, oneOfLayer;
       for (let i = 0; i < layerLength; i++) {
-        const temp = {label: ('Layer' + i)};
+        temp = {label: ('Layer' + i)};
         if (isextype) {
-          const oneOfLayer = (await Directory.aggregate([
+          oneOfLayer = (await Directory.aggregate([
             {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
             {$unwind: "$cells"},
             {$match: {"cells.layer": i, "cells.isnumerical": false}},
             {$group: {_id: "$_id", data: {$push: "$cells"}}}
           ]).exec());
           temp.disabled = oneOfLayer.length === 0;
-          if (temp.disabled) temp.value = [];
-          else temp.value = oneOfLayer[0].data;
+          if (temp.disabled) temp.cells = [];
+          else temp.cells = oneOfLayer[0].data;
         }
         else {
-          temp.value = (await Directory.aggregate([
+          temp.cells = (await Directory.aggregate([
             {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
             {$unwind: "$cells"},
             {$match: {"cells.layer": i}},

@@ -74,7 +74,7 @@
                           v-for="(item, index) in cell_layer"
                           :key="index"
                           :label="item.label"
-                          :value="{label: item.label, cells: item.value}"
+                          :value="[item]"
                           :disabled="item.disabled">
                         </el-option>
                     </el-select>
@@ -234,7 +234,7 @@ export default {
         directory_label: '',
         isextype: false,
         show_layer: false,
-        layer_value: ''
+        layer_value: {}
       },
       other_setting: {
         title: '',
@@ -262,12 +262,13 @@ export default {
       });
     },
     addSheet() {
+      console.log(this.making_sheet.layer_value[0]);
       const obj = {
-        cells: this.making_sheet.layer_value.cells,
+        cells: this.making_sheet.layer_value[0].cells,
         directory: this.making_sheet.directory_label,
         isextype: this.making_sheet.isextype,
         test_target: (this.making_sheet.isextype ? 'explanation(y)' : 'word(x)'),
-        label: this.making_sheet.layer_value.label
+        label: this.making_sheet.layer_value[0].label
       };
       this.table.push(obj);
       this.can_create_document = true;

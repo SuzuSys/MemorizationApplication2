@@ -511,6 +511,7 @@ export default {
         x_class: '',
         y: '',
         y_class: '',
+        img: [],
         file_list: [],
         blob: {}
       },
@@ -523,8 +524,10 @@ export default {
         x_class: '',
         y: '',
         y_class: '',
+        img: [],
         file_list: [],
-        blob: {}
+        blob: {},
+        img_is_changed: false
       }
     }
   },
@@ -574,12 +577,13 @@ export default {
       this.cell_target_x_class = this.correcting_cell.x_class;
       this.cell_target_y = this.correcting_cell.y;
       this.cell_target_y_class = this.correcting_cell.y_class;
+      this.cell_target_img = this.correcting_cell.img;
       this.reload_question_key_for_target++;
-      const obj = {parentDirectory: this.directory_target_id};
+      const obj = { parentDirectory: this.directory_target_id };
       Database.Base().get('/getCellTree', {params: obj}).then(result => {
         this.cell_tree = result.data;
         this.selected_leaf_directory_target = true;
-      })
+      });
     },
     resetCellTreeForDelete() {
       this.selected_leaf_directory_target = false;
@@ -591,16 +595,17 @@ export default {
       this.cell_target_y = this.correcting_cell.y = '';
       this.cell_target_y_class = this.correcting_cell.y_class = '';
       this.cell_target_label = this.correcting_cell.label = 'None';
+      this.cell_target_img = this.correcting_cell.img = [];
+      this.resetCorrectingCellImage();
       this.cell_target_children_isempty = false;
       this.correcting_cell.isnumerical = false;
       this.active_cell_mode = '';
-      const obj = {parentDirectory: this.directory_target_id};
+      const obj = { parentDirectory: this.directory_target_id };
       Database.Base().get('/getCellTree', {params: obj}).then(result => {
         this.cell_tree = result.data;
         this.selected_leaf_directory_target = true;
       });
     },
-
     handleChangeTargetDirectory(data) {
       const target_obj = data[data.length - 1];
       this.directory_target_id = target_obj._id;
@@ -620,7 +625,6 @@ export default {
         this.selected_leaf_directory_target = false;
       }
     },
-
     addDirectory() {
       const obj = {
         type: this.adding_directory.type,
@@ -729,13 +733,6 @@ export default {
       });
     },
     handleClickCell(data) {
-      const keys = Object.keys(this.correcting_cell.blob);
-      for (let i = 0; i < keys.length; i++) {
-        window.URL.revokeObjectURL(this.correcting_cell.blob[keys[i]]);
-      }
-      this.correcting_cell.blob = {};
-      this.correcting_cell.file_list = [];
-
       this.cell_target_id = data.id;
       this.cell_target_layer = data.value.layer;
       this.selected_cell_target = true;
@@ -745,10 +742,10 @@ export default {
       this.correcting_cell.y = this.cell_target_y = data.value.y;
       this.correcting_cell.y_class = this.cell_target_y_class = data.value.y_class;
       this.correcting_cell.isnumerical = data.value.isnumerical;
+      this.correcting_cell.img = this.cell_target_img = data.value.img;
       this.cell_target_children_isempty = data.value.children.length === 0;
-      this.cell_target_img = data.value.img;
       this.reload_question_key_for_target++;
-
+      this.resetCorrectingCellImage();
       if (this.cell_target_img.length === 0) {
         this.reload_question_key_for_correct++;
       }
@@ -771,7 +768,6 @@ export default {
         })();
       }
     },
-
     addCell() {
       if (this.adding_cell.file_list.length === 0) {
         const obj = {
@@ -858,6 +854,15 @@ export default {
         }
       });
     },
+    resetCorrectingCellImage() {
+      const keys = Object.keys(this.correcting_cell.blob);
+      for (let i = 0; i < keys.length; i++) {
+        window.URL.revokeObjectURL(this.correcting_cell.blob[keys[i]]);
+      }
+      this.correcting_cell.blob = {};
+      this.correcting_cell.file_list = [];
+      this.correcting_cell.img_is_changed = false;
+    },
     deleteCell() {
       const obj = {
         parentDirectory: this.directory_target_id,
@@ -888,11 +893,20 @@ export default {
       this.reload_question_key_for_correct++;
     },
     handleAddImage(file, fileList) {
-      this.adding_cell.file_list = fileList;
-      const key = 'F_' + file.raw.name.split('.')[0];
-      this.adding_cell.blob[key] = window.URL.createObjectURL(file.raw);
-      this.adding_cell.x += '%{' + key + '}';
-      this.adding_cell.y += '%{' + key + '}';
+      const idx = this.adding_cell.img.indexOf(file.raw.name);
+      if (idx === -1) {
+        this.adding_cell.file_list = fileList;
+        const key = 'F_' + file.raw.name.split('.')[0];
+        this.adding_cell.blob[key] = window.URL.createObjectURL(file.raw);
+        this.adding_cell.x += '%{' + key + '}';
+        this.adding_cell.y += '%{' + key + '}';
+      }
+      else {
+        this.$message({
+          message: 'This filename is already in use.',
+          type: 'error'
+        });
+      }
     },
     handleRemoveImage(file, fileList) {
       this.adding_cell.file_list = fileList;
@@ -901,21 +915,35 @@ export default {
       delete this.adding_cell.blob[key];
       this.adding_cell.x = this.adding_cell.x.replace('%{' + key + '}', '');
       this.adding_cell.y = this.adding_cell.y.replace('%{' + key + '}', '');
+      const idx = this.adding_cell.img.indexOf(file.raw.name);
+      this.adding_cell.img.splice(idx, 1);
     },
     handleAddImageForCorrect(file, fileList) {
-      this.correcting_cell.file_list = fileList;
-      const key = 'F_' + file.raw.name.split('.')[0];
-      this.correcting_cell.blob[key] = window.URL.createObjectURL(file.raw);
-      this.correcting_cell.x += '%{' + key + '}';
-      this.correcting_cell.y += '%{' + key + '}';
+      const idx = this.correcting_cell.img.indexOf(file.raw.name);
+      if (idx === -1) {
+        this.correcting_cell.img.push(file.raw.name);
+        this.correcting_cell.file_list = fileList;
+        const key = 'F_' + file.raw.name.split('.')[0];
+        this.correcting_cell.blob[key] = window.URL.createObjectURL(file.raw);
+        this.correcting_cell.x += '%{' + key + '}';
+        this.correcting_cell.y += '%{' + key + '}';
+      }
+      else {
+        this.$message({
+          message: 'This filename is already in use.',
+          type: 'error'
+        });
+      }
     },
     handleRemoveImageForCorrect(file, fileList) {
-      this.adding_cell.file_list = fileList;
+      this.correcting_cell.file_list = fileList;
       const key = 'F_' + file.raw.name.split('.')[0];
       window.URL.revokeObjectURL(this.correcting_cell.blob[key]);
       delete this.correcting_cell.blob[key];
       this.correcting_cell.x = this.correcting_cell.x.replace('%{' + key + '}', '');
       this.correcting_cell.y = this.correcting_cell.y.replace('%{' + key + '}', '');
+      const idx = this.correcting_cell.img.indexOf(file.raw.name);
+      this.correcting_cell.img.splice(idx, 1);
     },
     goTop() {
       this.$router.push({ path: '/' });
