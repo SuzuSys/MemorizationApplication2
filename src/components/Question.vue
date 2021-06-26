@@ -86,6 +86,7 @@ export default {
       }
     }
     else {
+      console.log(JSON.parse(JSON.stringify(this.blob)));
       this.blobUrl = this.blob;
     }
     let splited, urlkey, temp;

@@ -157,7 +157,7 @@ app.post("/addDirectory", (req, res) => {
       const obj = req.body;
       const directory = new Directory();
       directory.type = obj.type;
-      if (obj.type != 'r') {
+      if (obj.type !== 'r') {
         directory.parent = obj.parent;
         await Directory.updateOne(
           {_id: obj.parent},
@@ -317,7 +317,6 @@ app.post("/addCellWithImage", upload.array('file[]'), (req, res) => {
       cell.y_class = obj.y_class;
       const images = [];
       const to_dest = 'image/' + cell._id + '/';
-      fs.mkdirsSync(to_dest);
       let present_url, to_url, file_name;
       for (let i = 0; i < req.files.length; i++) {
         file_name = req.files[i].originalname;
@@ -378,10 +377,68 @@ app.post("/correctCell", (req, res) => {
         {_id: obj.parentDirectory},
         {$pull: {cells: {_id: obj.id}}}
       ).exec();
-      res.json(await Directory.updateOne(
+      await Directory.updateOne(
         {_id: obj.parentDirectory},
         {$addToSet: {cells: cell}}
-      ).exec());
+      ).exec();
+      res.status(200).send();
+    } catch (err) {
+      logger.log(err);
+      res.status(500).send("faild");
+    }
+  })();
+});
+
+app.post("/correctCellWithImage", upload.array('file[]'), (req, res) => {
+  (async () => {
+    try {
+      const obj = req.body;
+      const cell = new Cell();
+      cell._id = obj.id;
+      cell.parentDirectory = obj.parentDirectory;
+      const target = (await Directory.aggregate([
+        {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
+        {$unwind: "$cells"},
+        {$match: {"cells._id": mongoose.Types.ObjectId(obj.id)}},
+        {$group: {_id: "$_id", data: {$push: "$cells"}}}
+      ]).exec())[0].data[0];
+      cell.layer = target.layer;
+      if (target.layer > 0) cell.parent = target.parent;
+      cell.children = target.children;
+      cell.label = obj.label;
+      cell.isnumerical = obj.isnumerical;
+      cell.x = obj.x;
+      cell.x_class = obj.x_class;
+      cell.y = obj.y;
+      cell.y_class = obj.y_class;
+      const to_dest = 'image/' + obj.id + '/';
+      if ('img' in obj) {
+        cell.img = obj.img;
+        const unnecessary_img = target.img.filter(i => obj.img.indexOf(i) === -1);
+        for (let i = 0; i < unnecessary_img.length; i++) {
+          fs.removeSync(to_dest + unnecessary_img);
+        }
+        let present_url, to_url, file_name;
+        for (let i = 0; i < req.files.length; i++) {
+          file_name = req.files[i].originalname;
+          present_url = 'image_temp/' + file_name;
+          to_url = to_dest + file_name;
+          fs.moveSync(present_url, to_url);
+        }
+      }
+      else {
+        cell.img = [];
+        fs.removeSync(to_dest);
+      }
+      await Directory.updateOne(
+        {_id: obj.parentDirectory},
+        {$pull: {cells: {_id: obj.id}}}
+      ).exec();
+      await Directory.updateOne(
+        {_id: obj.parentDirectory},
+        {$addToSet: {cells: cell}}
+      ).exec();
+      res.status(200).send();
     } catch (err) {
       logger.log(err);
       res.status(500).send("faild");

@@ -572,7 +572,7 @@ export default {
     },
     resetCellTreeForCorrect() {
       this.selected_leaf_directory_target = false;
-      this.cell_target_label = this.correcting_cell.x;
+      this.cell_target_label = this.correcting_cell.label;
       this.cell_target_x = this.correcting_cell.x;
       this.cell_target_x_class = this.correcting_cell.x_class;
       this.cell_target_y = this.correcting_cell.y;
@@ -802,9 +802,7 @@ export default {
           formData.append('file[]', this.adding_cell.file_list[i].raw);
         }
         Database.Base().post('/addCellWithImage', formData, {
-          headers: {
-            'content-type': 'multipart/form-data'
-          }
+          headers: { 'content-type': 'multipart/form-data' }
         }).then(this.notifyForAddCell);
       }
     },
@@ -826,33 +824,60 @@ export default {
       }
     },
     correctCell() {
-      const obj = {
-        parentDirectory: this.directory_target_id,
-        id: this.cell_target_id,
-        label: this.correcting_cell.label,
-        isnumerical: this.correcting_cell.isnumerical,
-        x: this.correcting_cell.x,
-        x_class: this.correcting_cell.x_class,
-        y: this.correcting_cell.y,
-        y_class: this.correcting_cell.y_class
-      };
-      DatabasePrototype.correctCell(obj).then(result => {
-        if (result.status === 200) {
-          this.$notify({
-            title: 'Success',
-            message: 'Successfully corrected cell',
-            type: 'success'
-          });
-          this.resetCellTreeForCorrect();
+      console.log('detect');
+      if (this.correcting_cell.img_is_changed) {
+        this.correcting_cell.img_is_changed = false;
+        const formData = new FormData();
+        formData.append('parentDirectory', this.directory_target_id);
+        formData.append('id', this.cell_target_id);
+        formData.append('label', this.correcting_cell.label);
+        formData.append('isnumerical', this.correcting_cell.isnumerical);
+        formData.append('x', this.correcting_cell.x);
+        formData.append('x_class', this.correcting_cell.x_class);
+        formData.append('y', this.correcting_cell.y);
+        formData.append('y_class', this.correcting_cell.y_class);
+        for (let i = 0; i < this.correcting_cell.img.length; i++) {
+          formData.append('img[]', this.correcting_cell.img[i]);
         }
-        else {
-          this.$notify({
-            title: 'Error',
-            message: 'Could not correct cell successfully',
-            type: 'error'
-          });
+        for (let i = 0; i < this.correcting_cell.file_list.length; i++) {
+          if (this.correcting_cell.file_list[i].status === 'ready') {
+            formData.append('file[]', this.correcting_cell.file_list[i].raw);
+          }
         }
-      });
+        Database.Base().post('/correctCellWithImage', formData, {
+          headers: { 'content-type': 'multipart/form-data' }
+        }).then(this.notifyForCorrectCell);
+      }
+      else {
+        const obj = {
+          parentDirectory: this.directory_target_id,
+          id: this.cell_target_id,
+          label: this.correcting_cell.label,
+          isnumerical: this.correcting_cell.isnumerical,
+          x: this.correcting_cell.x,
+          x_class: this.correcting_cell.x_class,
+          y: this.correcting_cell.y,
+          y_class: this.correcting_cell.y_class
+        };
+        Database.Base().post('/correctCell', obj).then(this.notifyForCorrectCell);
+      }
+    },
+    notifyForCorrectCell(result) {
+      if (result.status === 200) {
+        this.$notify({
+          title: 'Success',
+          message: 'Successfully corrected cell',
+          type: 'success'
+        });
+        this.resetCellTreeForCorrect();
+      }
+      else {
+        this.$notify({
+          title: 'Error',
+          message: 'Could not correct cell successfully',
+          type: 'error'
+        });
+      }
     },
     resetCorrectingCellImage() {
       const keys = Object.keys(this.correcting_cell.blob);
@@ -893,10 +918,10 @@ export default {
       this.reload_question_key_for_correct++;
     },
     handleAddImage(file, fileList) {
-      const idx = this.adding_cell.img.indexOf(file.raw.name);
+      const idx = this.adding_cell.img.indexOf(file.name);
       if (idx === -1) {
         this.adding_cell.file_list = fileList;
-        const key = 'F_' + file.raw.name.split('.')[0];
+        const key = 'F_' + file.name.split('.')[0];
         this.adding_cell.blob[key] = window.URL.createObjectURL(file.raw);
         this.adding_cell.x += '%{' + key + '}';
         this.adding_cell.y += '%{' + key + '}';
@@ -910,23 +935,24 @@ export default {
     },
     handleRemoveImage(file, fileList) {
       this.adding_cell.file_list = fileList;
-      const key = 'F_' + file.raw.name.split('.')[0];
+      const key = 'F_' + file.name.split('.')[0];
       window.URL.revokeObjectURL(this.adding_cell.blob[key]);
       delete this.adding_cell.blob[key];
       this.adding_cell.x = this.adding_cell.x.replace('%{' + key + '}', '');
       this.adding_cell.y = this.adding_cell.y.replace('%{' + key + '}', '');
-      const idx = this.adding_cell.img.indexOf(file.raw.name);
+      const idx = this.adding_cell.img.indexOf(file.name);
       this.adding_cell.img.splice(idx, 1);
     },
     handleAddImageForCorrect(file, fileList) {
       const idx = this.correcting_cell.img.indexOf(file.raw.name);
       if (idx === -1) {
-        this.correcting_cell.img.push(file.raw.name);
+        this.correcting_cell.img.push(file.name);
         this.correcting_cell.file_list = fileList;
-        const key = 'F_' + file.raw.name.split('.')[0];
+        const key = 'F_' + file.name.split('.')[0];
         this.correcting_cell.blob[key] = window.URL.createObjectURL(file.raw);
         this.correcting_cell.x += '%{' + key + '}';
         this.correcting_cell.y += '%{' + key + '}';
+        this.correcting_cell.img_is_changed = true;
       }
       else {
         this.$message({
@@ -937,13 +963,14 @@ export default {
     },
     handleRemoveImageForCorrect(file, fileList) {
       this.correcting_cell.file_list = fileList;
-      const key = 'F_' + file.raw.name.split('.')[0];
+      const key = 'F_' + file.name.split('.')[0];
       window.URL.revokeObjectURL(this.correcting_cell.blob[key]);
       delete this.correcting_cell.blob[key];
       this.correcting_cell.x = this.correcting_cell.x.replace('%{' + key + '}', '');
       this.correcting_cell.y = this.correcting_cell.y.replace('%{' + key + '}', '');
-      const idx = this.correcting_cell.img.indexOf(file.raw.name);
+      const idx = this.correcting_cell.img.indexOf(file.name);
       this.correcting_cell.img.splice(idx, 1);
+      this.correcting_cell.img_is_changed = true;
     },
     goTop() {
       this.$router.push({ path: '/' });
