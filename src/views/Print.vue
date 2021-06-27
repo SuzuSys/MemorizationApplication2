@@ -273,12 +273,14 @@ export default {
       };
       this.table.push(obj);
       this.can_create_document = true;
+      this.render_main = false;
     },
     deleteRow(index, rows) {
       rows.splice(index, 1);
       if (this.table.length === 0) {
         this.can_create_document = false;
       }
+      this.render_main = false;
     },
     createDocument() {
       const arr = [];
