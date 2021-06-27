@@ -6,7 +6,7 @@
         <span class="digital"><span v-for="(char, index) in idxFormat" :key="index" class="digital_number">{{char}}</span>.</span>
       </el-col>
       <el-col :span="23 - digit">
-        <p><code>question: {{ isextype ? x_class : y_class }}, answer: {{ isextype ? y_class : x_class }}</code></p>
+        <code>question: {{ isextype ? x_class : y_class }}, answer: {{ isextype ? y_class : x_class }}</code>
       </el-col>
     </el-row>
     <el-row>
@@ -14,16 +14,18 @@
         <el-row>
           <el-col class="question" :span="24">
             <span v-for="(item, index) in (isextype ? formated_x : formated_y)" :key="index">
-              <span v-html="item.sentence"></span>
-              <vue-mathjax :formula="item.math"></vue-mathjax>
+              <span v-if="item.sentence.if" v-html="item.sentence.content"></span>
+              <vue-mathjax v-if="item.math.if" :formula="item.math.content"></vue-mathjax>
+              <img v-if="item.img.if" :src="item.img.url">
             </span>
           </el-col>
         </el-row>
         <el-row v-show="show_answer">
           <el-col class="answer" :span="24">
             <span v-for="(item, index) in (isextype ? formated_y : formated_x)" :key="index">
-              <span v-html="item.sentence"></span>
-              <vue-mathjax :formula="item.math"></vue-mathjax>
+              <span v-if="item.sentence.if" v-html="item.sentence.content"></span>
+              <vue-mathjax v-if="item.math.if" :formula="item.math.content"></vue-mathjax>
+              <img v-if="item.img.if" :src="item.img.url">
             </span>
           </el-col>
         </el-row>
@@ -35,6 +37,7 @@
 
 <script>
 import { VueMathjax } from 'vue-mathjax'
+import Database from '../apicreate'
 export default {
   components: {
     'vue-mathjax': VueMathjax
@@ -43,7 +46,8 @@ export default {
   data () {
     return {
       formated_x: [],
-      formated_y: []
+      formated_y: [],
+      blobUrl: {}
     }
   },
   props: {
@@ -55,7 +59,11 @@ export default {
     y_class: String,
     isextype: Boolean,
     show_answer: Boolean,
-    alone: Boolean
+    alone: Boolean,
+    carryImg: Boolean,
+    id: String,
+    img: Array,
+    blob: Object
   },
   computed: {
     idxFormat: function() {
@@ -66,58 +74,53 @@ export default {
       return str;
     }
   },
-  created: function() {
+  created: async function() {
+    if (this.carryImg) {
+      let key, result;
+      const obj = {id: this.id};
+      for (let i = 0; i < this.img.length; i++) {
+        key = 'F_' + this.img[i].split('.')[0];
+        obj.filename = this.img[i];
+        result = await Database.Blob().get('/getImage', {params: obj});
+        this.blobUrl[key] = window.URL.createObjectURL(result.data);
+      }
+    }
+    else {
+      this.blobUrl = this.blob;
+    }
+    let splited, urlkey, temp;
+    const re = /(%{.+?}|\$\$.+?\$\$|\$.+?\$)/;
     const wrap = [
       {input: this.x, output: this.formated_x},
       {input: this.y, output: this.formated_y}
     ];
     for (let i = 0; i < wrap.length; i++) {
-      let target = wrap[i];
-      let tempobj = {sentence: '', math: ''};
-      let divider = 0;
-      let out = true;
-      let neglect = false;
-      for (let j = 0; j < target.input.length; j++) {
-        if (neglect) {
-          neglect = false;
-        }
-        else if (target.input[j] === '$') {
-          if (out) {
-            if (divider !== j) {
-              tempobj.sentence = target.input.slice(divider, j);
-              divider = j;
-            }
-            out = false;
-            neglect = true;
+      splited = wrap[i].input.split(re);
+      for (let j = 0; j < splited.length; j++) {
+        if (splited[j] !== '') {
+          temp = {
+            img: {if: false, url: ''},
+            math: {if: false, content: ''},
+            sentence: {if: false, content: ''}
+          };
+          if (
+            splited[j][0] === '$'
+            && splited[j].slice(-1) === '$'
+          ) {
+            temp.math.if = true;
+            temp.math.content = splited[j];
+          }
+          else if (splited[j][0] === '%') {
+            temp.img.if = true;
+            urlkey = splited[j].slice(2, -1);
+            temp.img.url = this.blobUrl[urlkey];
           }
           else {
-            if (j === target.input.length - 1) {
-              tempobj.math = target.input.slice(divider);
-            }
-            else if (target.input[j + 1] === '$') {
-              if (j + 1 === target.input.length) {
-                tempobj.math = target.input.slice(divider)
-              }
-              else {
-                tempobj.math = target.input.slice(divider, j + 2);
-                divider = j + 2;
-                out = true;
-              }
-            }
-            else {
-              tempobj.math = target.input.slice(divider, j + 1);
-              divider = j + 1;
-              out = true;
-            }
-            target.output.push(tempobj);
-            tempobj = {sentence: '', math: ''};
-            neglect = true;
+            temp.sentence.if = true;
+            temp.sentence.content = splited[j];
           }
+          wrap[i].output.push(temp);
         }
-      }
-      if (out) {
-        tempobj.sentence = target.input.slice(divider);
-        target.output.push(tempobj);
       }
     }
   }
@@ -132,9 +135,6 @@ export default {
 #entire {
   margin: 10px;
   break-inside: avoid-page;
-}
-p {
-  margin: 0px;
 }
 .digital {
   font-family: SevenSegment;

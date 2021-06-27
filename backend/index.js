@@ -9,7 +9,7 @@ const Directory = schema_obj.directory;
 const fs = require("fs-extra");
 const out = fs.createWriteStream("info.log");
 const logger = new console.Console(out);
-logger.log('Can you looking this sentence?');
+logger.log('---ERROR STORAGE---');
 // end{debug setting}
 
 const connectOption = {
@@ -23,6 +23,16 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(cors());
 
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'image_temp/');
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname);
+  }
+});
+const upload = multer({storage: storage});
+
 app.get("/getDirectoryTree", (req, res) => {
   (async () => {
     try {
@@ -34,23 +44,20 @@ app.get("/getDirectoryTree", (req, res) => {
       res.json(tree);
     } catch (err) {
       logger.log(err);
-      res.status(500).send("faild");
+      res.status(500).send();
     }
   })();
 });
 async function DirectoryToObject(obj) {
   const piece = {label: obj.name, value: obj};
-  if (obj.type === 'l') {
-    piece.isleaf = true;
-    piece.isnotleaf = false;
-  } 
-  else {
-    piece.isleaf = false;
-    piece.isnotleaf = true;
+  piece.isleaf = obj.type === 'l';
+  piece.isnotleaf = obj.type !== 'l';
+  if (obj.type !== 'l') {
     if (obj.children.length !== 0) {
       piece.children = [];
+      let child;
       for (let i = 0; i < obj.children.length; i++) {
-        const child = await Directory.findOne({_id: obj.children[i]}).exec();
+        child = await Directory.findOne({_id: obj.children[i]}).exec();
         piece.children.push(await DirectoryToObject(child));
       }
     }
@@ -78,15 +85,16 @@ app.get("/getCellTree", (req, res) => {
       res.json(tree);
     } catch (err) {
       logger.log(err);
-      res.status(500).send("faild");
+      res.status(500).send();
     }
   })();
 });
 async function CellToObject(obj, parentDirectory) {
   const piece = {label: obj.label, id: obj._id, value: obj};
   piece.children = [];
+  let child;
   for (let i = 0; i < obj.children.length; i++) {
-    const child = (await Directory.aggregate([
+    child = (await Directory.aggregate([
       {$match: {_id: mongoose.Types.ObjectId(parentDirectory)}},
       {$unwind: "$cells"},
       {$match: {"cells._id": mongoose.Types.ObjectId(obj.children[i])}},
@@ -108,21 +116,22 @@ app.get("/getCellLayer", (req, res) => {
         {$group: {_id: "$cells.layer"}}
       ]).exec()).length;
       const isextype = obj.isextype === 'true';
+      let temp, oneOfLayer;
       for (let i = 0; i < layerLength; i++) {
-        const temp = {label: ('Layer' + i)};
+        temp = {label: ('Layer' + i)};
         if (isextype) {
-          const oneOfLayer = (await Directory.aggregate([
+          oneOfLayer = (await Directory.aggregate([
             {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
             {$unwind: "$cells"},
             {$match: {"cells.layer": i, "cells.isnumerical": false}},
             {$group: {_id: "$_id", data: {$push: "$cells"}}}
           ]).exec());
           temp.disabled = oneOfLayer.length === 0;
-          if (temp.disabled) temp.value = [];
-          else temp.value = oneOfLayer[0].data;
+          if (temp.disabled) temp.cells = [];
+          else temp.cells = oneOfLayer[0].data;
         }
         else {
-          temp.value = (await Directory.aggregate([
+          temp.cells = (await Directory.aggregate([
             {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
             {$unwind: "$cells"},
             {$match: {"cells.layer": i}},
@@ -135,7 +144,7 @@ app.get("/getCellLayer", (req, res) => {
       res.json(cellLayer);
     } catch (err) {
       logger.log(err);
-      res.status(500).send("faild");
+      res.status(500).send();
     }
   })();
 });
@@ -146,7 +155,7 @@ app.post("/addDirectory", (req, res) => {
       const obj = req.body;
       const directory = new Directory();
       directory.type = obj.type;
-      if (obj.type != 'r') {
+      if (obj.type !== 'r') {
         directory.parent = obj.parent;
         await Directory.updateOne(
           {_id: obj.parent},
@@ -154,10 +163,11 @@ app.post("/addDirectory", (req, res) => {
         ).exec();
       }
       directory.name = obj.name;
-      res.json(await directory.save());
+      await directory.save();
+      res.status(200).send();
     } catch (err) {
       logger.log(err);
-      res.status(500).send("faild");
+      res.status(500).send();
     }
   })();
 });
@@ -166,13 +176,14 @@ app.post("/renameDirectory", (req, res) => {
   (async () => {
     try {
       const obj = req.body;
-      res.json(await Directory.updateOne(
+      await Directory.updateOne(
         {_id: obj.id},
         {name: obj.name}
-      ).exec());
+      ).exec();
+      res.status(200).send();
     } catch (err) {
       logger.log(err);
-      res.status(500).send("faild");
+      res.status(500).send();
     }
   })();
 });
@@ -190,13 +201,14 @@ app.post("/migrateDirectory", (req, res) => {
         {_id: obj.to},
         {$addToSet: {children: obj.id}}
       ).exec();
-      res.json(await Directory.updateOne(
+      await Directory.updateOne(
         {_id: obj.id},
         {parent: obj.to}
-      ).exec());
+      ).exec();
+      res.status(200).send();
     } catch (err) {
       logger.log(err);
-      res.status(500).send("faild");
+      res.status(500).send();
     }
   })();
 });
@@ -213,12 +225,13 @@ app.delete("/deleteDirectory", (req, res) => {
             {$pull: {children: obj.id}}
           ).exec();
         }
-        res.json(await Directory.deleteOne({_id: obj.id}).exec());
+        await Directory.deleteOne({_id: obj.id}).exec();
+        res.status(200).send();
       }
       else throw new Error();
     } catch (err) {
       logger.log(err);
-      res.status(500).send("faild");
+      res.status(500).send();
     }
   })();
 });
@@ -258,35 +271,25 @@ app.post("/addCell", (req, res) => {
       cell.y = obj.y;
       cell.y_class = obj.y_class;
       cell.img = [];
-      res.json(await Directory.updateOne(
+      await Directory.updateOne(
         {_id: obj.parentDirectory},
         {$addToSet: {cells: cell}}
-      ).exec());
+      ).exec();
+      res.status(200).send();
     } catch (err) {
       logger.log(err);
-      res.status(500).send("faild");
+      res.status(500).send();
     }
   })();
-})
-
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'image_temp/');
-  },
-  filename: function (req, file, cb) {
-    cb(null, file.originalname)
-  }
 });
-const upload = multer({storage: storage});
+
 app.post("/addCellWithImage", upload.array('file[]'), (req, res) => {
   (async () => {
     try {
-      logger.log(req.files);
-      logger.log(req.body);
-
       const obj = req.body;
       const cell = new Cell();
-      if (obj.isRoot) {
+      const isRoot = obj.isRoot === 'true';
+      if (isRoot) {
         cell.layer = 0;
       }
       else {
@@ -316,290 +319,178 @@ app.post("/addCellWithImage", upload.array('file[]'), (req, res) => {
       cell.y = obj.y;
       cell.y_class = obj.y_class;
       const images = [];
+      const to_dest = 'image/' + cell._id + '/';
+      let present_url, to_url, file_name;
       for (let i = 0; i < req.files.length; i++) {
-        images.push(req.files[i].originalname);
-        // fs.moveSync()
+        file_name = req.files[i].originalname;
+        images.push(file_name);
+        present_url = 'image_temp/' + file_name;
+        to_url = to_dest + file_name;
+        fs.moveSync(present_url, to_url);
       }
       cell.img = images;
-
-      res.json(await Directory.updateOne(
+      await Directory.updateOne(
         {_id: obj.parentDirectory},
         {$addToSet: {cells: cell}}
-      ).exec());
+      ).exec();
+      res.status(200).send();
     } catch (err) {
       logger.log(err);
+      res.status(500).send();
     }
   })();
 });
 
-app.get("/MemorizationApplication", (req, res) => {
+app.get("/getImage", (req, res) => {
   (async () => {
     try {
-      if (Object.keys(req.query).length === 0) {
-        let data = await Directory.find({}).exec();
-        res.json(data);
+      const obj = req.query;
+      const url = './image/' + obj.id + '/' + obj.filename;
+      res.status(200).send(fs.readFileSync(url));
+    } catch (err) {
+      logger.log(err);
+      res.status(500).send();
+    }
+  })();
+});
+
+app.post("/correctCell", (req, res) => {
+  (async () => {
+    try {
+      const obj = req.body;
+      const cell = new Cell();
+      cell._id = obj.id;
+      cell.parentDirectory = obj.parentDirectory;
+      const target = (await Directory.aggregate([
+        {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
+        {$unwind: "$cells"},
+        {$match: {"cells._id": mongoose.Types.ObjectId(obj.id)}},
+        {$group: {_id: "$_id", data: {$push: "$cells"}}}
+      ]).exec())[0].data[0];
+      cell.layer = target.layer;
+      cell.img = target.img;
+      if (target.layer > 0) cell.parent = target.parent;
+      cell.children = target.children;
+      cell.label = obj.label;
+      cell.isnumerical = obj.isnumerical;
+      cell.x = obj.x;
+      cell.x_class = obj.x_class;
+      cell.y = obj.y;
+      cell.y_class = obj.y_class;
+      await Directory.updateOne(
+        {_id: obj.parentDirectory},
+        {$pull: {cells: {_id: obj.id}}}
+      ).exec();
+      await Directory.updateOne(
+        {_id: obj.parentDirectory},
+        {$addToSet: {cells: cell}}
+      ).exec();
+      res.status(200).send();
+    } catch (err) {
+      logger.log(err);
+      res.status(500).send();
+    }
+  })();
+});
+
+app.post("/correctCellWithImage", upload.array('file[]'), (req, res) => {
+  (async () => {
+    try {
+      const obj = req.body;
+      const cell = new Cell();
+      cell._id = obj.id;
+      cell.parentDirectory = obj.parentDirectory;
+      const target = (await Directory.aggregate([
+        {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
+        {$unwind: "$cells"},
+        {$match: {"cells._id": mongoose.Types.ObjectId(obj.id)}},
+        {$group: {_id: "$_id", data: {$push: "$cells"}}}
+      ]).exec())[0].data[0];
+      cell.layer = target.layer;
+      if (target.layer > 0) cell.parent = target.parent;
+      cell.children = target.children;
+      cell.label = obj.label;
+      cell.isnumerical = obj.isnumerical;
+      cell.x = obj.x;
+      cell.x_class = obj.x_class;
+      cell.y = obj.y;
+      cell.y_class = obj.y_class;
+      const to_dest = 'image/' + obj.id + '/';
+      if ('img' in obj) {
+        cell.img = obj.img;
+        const unnecessary_img = target.img.filter(i => obj.img.indexOf(i) === -1);
+        for (let i = 0; i < unnecessary_img.length; i++) {
+          fs.removeSync(to_dest + unnecessary_img);
+        }
+        let present_url, to_url, file_name;
+        for (let i = 0; i < req.files.length; i++) {
+          file_name = req.files[i].originalname;
+          present_url = 'image_temp/' + file_name;
+          to_url = to_dest + file_name;
+          fs.moveSync(present_url, to_url);
+        }
       }
       else {
-        let obj = req.query;
-        if (obj.requestType === 'text') {
-          let tree = [];
-          let root;
-          switch (obj.want) {
-            case 'directoryTree':
-              root = await Directory.find({type: 'r'}).exec();
-              for (let i = 0; i < root.length; i++) {
-                tree.push(await DirectoryToObject(root[i]));
-              }
-              res.json(tree);
-              break;
-            case 'cellTree':
-              let parentDirectory = await Directory.findOne({_id: obj.parentDirectory}).exec();
-              if (parentDirectory.cells.length !== 0) {
-                root = (await Directory.aggregate([
-                  {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
-                  {$unwind: "$cells"},
-                  {$match: {"cells.layer": 0}},
-                  {$group: {_id: "$_id", data: {$push: "$cells"}}}
-                ]).exec())[0].data;
-                for (let i = 0; i < root.length; i++) {
-                  let rootObj = await CellToObject(root[i], obj.parentDirectory);
-                  tree.push(rootObj);
-                }
-              }
-              res.json(tree);
-              break;
-            case 'cellLayer':
-              let cellLayer = [];
-              let layerLength = (await Directory.aggregate([
-                {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
-                {$unwind: "$cells"},
-                {$group: {_id: "$cells.layer"}}
-              ]).exec()).length;
-              let isextype = obj.isextype === 'true';
-              for (let i = 0; i < layerLength; i++) {
-                let temp = {label: ('Layer' + i)};
-                if (isextype) {
-                  let oneOfLayer = (await Directory.aggregate([
-                    {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
-                    {$unwind: "$cells"},
-                    {$match: {"cells.layer": i, "cells.isnumerical": false}},
-                    {$group: {_id: "$_id", data: {$push: "$cells"}}}
-                  ]).exec());
-                  temp.disabled = oneOfLayer.length === 0;
-                  if (temp.disabled) temp.value = [];
-                  else temp.value = oneOfLayer[0].data;
-                }
-                else {
-                  temp.value = (await Directory.aggregate([
-                    {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
-                    {$unwind: "$cells"},
-                    {$match: {"cells.layer": i}},
-                    {$group: {_id: "$_id", data: {$push: "$cells"}}}
-                  ]).exec())[0].data;
-                  temp.disabled = false;
-                }
-                cellLayer.push(temp);
-              }
-              res.json(cellLayer);
-              break;
-            default:
-              throw new Error();
-          }
-        }
-        else {
-          // getPng Test
-          res.status(200).send(fs.readFileSync("./image/check.png"));
-        }
+        cell.img = [];
+        fs.removeSync(to_dest);
       }
+      await Directory.updateOne(
+        {_id: obj.parentDirectory},
+        {$pull: {cells: {_id: obj.id}}}
+      ).exec();
+      await Directory.updateOne(
+        {_id: obj.parentDirectory},
+        {$addToSet: {cells: cell}}
+      ).exec();
+      res.status(200).send();
     } catch (err) {
       logger.log(err);
-      res.status(500).send("faild");
+      res.status(500).send();
     }
   })();
 });
 
-app.post("/MemorizationApplication", (req, res) => {
+app.delete("/deleteCell", (req, res) => {
   (async () => {
     try {
-      let obj = req.body;
-      logger.log(req);
-      if (obj.isAdd) {
-        if (obj.isDirectory) {
-          let directory = new Directory();
-          directory.type = obj.type;
-          if (obj.type !== 'r') {
-            directory.parent = obj.parent;
-            await Directory.updateOne(
-              {_id: obj.parent},
-              {$addToSet: {children: directory._id}}
-            ).exec();
-          }
-          directory.name = obj.name;
-          res.json(await directory.save());
-        }
-        else {
-          let cell = new Cell();
-          if (obj.isRoot) {
-            cell.layer = 0;
-          }
-          else {
-            cell.parent = obj.parent;
-            let parent = (await Directory.aggregate([
-              {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
-              {$unwind: "$cells"},
-              {$match: {"cells._id": mongoose.Types.ObjectId(obj.parent)}},
-              {$group: {_id: "$_id", data: {$push: "$cells"}}}
-            ]).exec())[0].data[0];
-            await Directory.updateOne(
-              {_id: obj.parentDirectory},
-              {$pull: {cells: {_id: obj.parent}}}
-            ).exec();
-            parent.children.push(cell._id);
-            await Directory.updateOne(
-              {_id: obj.parentDirectory},
-              {$addToSet: {cells: parent}}
-            ).exec();
-            cell.layer = parent.layer + 1;
-          }
-          cell.parentDirectory = obj.parentDirectory;
-          cell.label = obj.label;
-          cell.isnumerical = obj.isnumerical;
-          cell.x = obj.x;
-          cell.x_class = obj.x_class;
-          cell.y = obj.y;
-          cell.y_class = obj.y_class;
-          // cell.img = obj.img;
-          res.json(await Directory.updateOne(
+      const obj = req.body;
+      const target = (await Directory.aggregate([
+        {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
+        {$unwind: "$cells"},
+        {$match: {"cells._id": mongoose.Types.ObjectId(obj.id)}},
+        {$group: {_id: "$_id", data: {$push: "$cells"}}}
+      ]).exec())[0].data[0];
+      if (target.children.length === 0) {
+        if (target.layer !== 0) {
+          const parent = (await Directory.aggregate([
+            {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
+            {$unwind: "$cells"},
+            {$match: {"cells._id": mongoose.Types.ObjectId(target.parent)}},
+            {$group: {_id: "$_id", data: {$push: "$cells"}}}
+          ]).exec())[0].data[0];
+          await Directory.updateOne(
             {_id: obj.parentDirectory},
-            {$addToSet: {cells: cell}}
-          ).exec());
+            {$pull: {cells: {_id: parent._id}}}
+          ).exec();
+          parent.children.splice(parent.children.indexOf(obj.id), 1);
+          await Directory.updateOne(
+            {_id: obj.parentDirectory},
+            {$addToSet: {cells: parent}}
+          ).exec();
         }
+        await Directory.updateOne(
+          {_id: obj.parentDirectory},
+          {$pull: {cells: {_id: obj.id}}}
+        ).exec();
+        fs.removeSync('image/' + obj.id + '/');
+        res.status(200).send();
       }
-      else {
-        if (obj.isDirectory) {
-          switch (obj.want) {
-            case 'rename':
-              res.json(await Directory.updateOne(
-                {_id: obj.id},
-                {name: obj.name}
-              ).exec());
-              break;
-            case 'migrate':
-              let target = await Directory.findOne({_id: obj.id}).exec();
-              await Directory.updateOne(
-                {_id: target.parent},
-                {$pull: {children: obj.id}}
-              ).exec();
-              await Directory.updateOne(
-                {_id: obj.to},
-                {$addToSet: {children: obj.id}}
-              ).exec();
-              res.json(await Directory.updateOne(
-                {_id: obj.id},
-                {parent: obj.to}
-              ).exec());
-              break;
-            default:
-              throw new Error();
-          }
-        }
-        else {
-          switch (obj.want) {
-            case 'correct':
-              let cell = new Cell();
-              cell._id = obj.id;
-              cell.parentDirectory = obj.parentDirectory;
-              let target = (await Directory.aggregate([
-                {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
-                {$unwind: "$cells"},
-                {$match: {"cells._id": mongoose.Types.ObjectId(obj.id)}},
-                {$group: {_id: "$_id", data: {$push: "$cells"}}}
-              ]).exec())[0].data[0];
-              cell.layer = target.layer;
-              if (target.layer > 0) cell.parent = target.parent;
-              cell.children = target.children;
-              cell.label = obj.label;
-              cell.isnumerical = obj.isnumerical;
-              cell.x = obj.x;
-              cell.x_class = obj.x_class;
-              cell.y = obj.y;
-              cell.y_class = obj.y_class;
-              await Directory.updateOne(
-                {_id: obj.parentDirectory},
-                {$pull: {cells: {_id: obj.id}}}
-              ).exec();
-              res.json(await Directory.updateOne(
-                {_id: obj.parentDirectory},
-                {$addToSet: {cells: cell}}
-              ).exec());
-              break;
-            // case 'correctImg'
-            default:
-              throw new Error();
-          }
-        }
-      }
+      else throw new Error();
     } catch (err) {
       logger.log(err);
-      res.status(500).send("faild");
+      res.status(500).send();
     }
   })();
 });
 
-app.delete("/MemorizationApplication", (req, res) => {
-  (async () => {
-    try {
-      let obj = req.body;
-      let target;
-      if (obj.isDirectory) {
-        target = await Directory.findOne({_id: obj.id}).exec();
-        if (target.children.length === 0) {
-          if (target.type !== 'r') {
-            await Directory.updateOne(
-              {_id: target.parent},
-              {$pull: {children: obj.id}}
-            ).exec();
-          }
-          res.json(await Directory.deleteOne({_id: obj.id}).exec());
-        }
-        else throw new Error();
-      }
-      else {
-        target = (await Directory.aggregate([
-          {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
-          {$unwind: "$cells"},
-          {$match: {"cells._id": mongoose.Types.ObjectId(obj.id)}},
-          {$group: {_id: "$_id", data: {$push: "$cells"}}}
-        ]).exec())[0].data[0];
-        if (target.children.length === 0) {
-          if (target.layer !== 0) {
-            let parent = (await Directory.aggregate([
-              {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
-              {$unwind: "$cells"},
-              {$match: {"cells._id": mongoose.Types.ObjectId(target.parent)}},
-              {$group: {_id: "$_id", data: {$push: "$cells"}}}
-            ]).exec())[0].data[0];
-            await Directory.updateOne(
-              {_id: obj.parentDirectory},
-              {$pull: {cells: {_id: parent._id}}}
-            ).exec();
-            parent.children.splice(parent.children.indexOf(obj.id), 1);
-            await Directory.updateOne(
-              {_id: obj.parentDirectory},
-              {$addToSet: {cells: parent}}
-            ).exec();
-          }
-          res.json(await Directory.updateOne(
-            {_id: obj.parentDirectory},
-            {$pull: {cells: {_id: obj.id}}}
-          ).exec());
-        }
-        else throw new Error();
-      }
-    } catch (err) {
-      logger.log(err);
-      res.status(500).send("faild");
-    }
-  })();
-});
 app.listen(process.env.PORT || 3000);

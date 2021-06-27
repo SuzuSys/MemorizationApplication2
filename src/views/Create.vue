@@ -69,7 +69,10 @@
                   :y_class="cell_target_y_class"
                   :isextype="false"
                   :show_answer="true"
-                  :alone="true" />
+                  :alone="true"
+                  :carryImg="true"
+                  :id="cell_target_id"
+                  :img="cell_target_img" />
               </el-col>
             </el-row>
             <el-row>
@@ -123,21 +126,19 @@
                       <el-input v-model="adding_cell.y_class"></el-input>
                     </el-form-item>
                     <el-form-item label="image">
-                      <div id="fileUpload">
-                        <el-upload
-                          class="upload-demo"
-                          action="" 
-                          :on-change="handleAddImage"
-                          :on-remove="handleRemoveImage"
-                          :file-list="adding_cell.file_list" 
-                          list-type="picture"
-                          :auto-upload="false">
-                            <el-button size="mini" type="primary">Click to upload</el-button>
-                            <div slot="tip" class="el-upload__tip">
-                              .png
-                            </div>
-                        </el-upload>
-                      </div>
+                      <el-upload
+                        class="upload-demo"
+                        action="" 
+                        :on-change="handleAddImage"
+                        :on-remove="handleRemoveImage"
+                        :file-list="adding_cell.file_list" 
+                        list-type="picture"
+                        :auto-upload="false">
+                          <el-button size="mini" type="primary">Click to upload</el-button>
+                          <div slot="tip" class="el-upload__tip">
+                            .png
+                          </div>
+                      </el-upload>
                     </el-form-item>
                     <el-form-item>
                       <el-button
@@ -169,7 +170,9 @@
                   :y_class="adding_cell.y_class"
                   :isextype="false"
                   :show_answer="true"
-                  :alone="true" />
+                  :alone="true"
+                  :carryImg="false"
+                  :blob="adding_cell.blob" />
               </el-col>
             </el-row>
             <el-row v-show="active_cell_mode === 'correct'">
@@ -202,6 +205,21 @@
                     <el-form-item label="y_class">
                       <el-input v-model="correcting_cell.y_class"></el-input>
                     </el-form-item>
+                    <el-form-item label="image">
+                      <el-upload
+                        class="upload-demo"
+                        action="" 
+                        :on-change="handleAddImageForCorrect"
+                        :on-remove="handleRemoveImageForCorrect"
+                        :file-list="correcting_cell.file_list" 
+                        list-type="picture"
+                        :auto-upload="false">
+                          <el-button size="mini" type="primary">Click to upload</el-button>
+                          <div slot="tip" class="el-upload__tip">
+                            .png
+                          </div>
+                      </el-upload>
+                    </el-form-item>
                     <el-form-item>
                       <el-button
                         type="primary"
@@ -232,7 +250,9 @@
                   :y_class="correcting_cell.y_class"
                   :isextype="false"
                   :show_answer="true"
-                  :alone="true" />
+                  :alone="true"
+                  :carryImg="false"
+                  :blob="correcting_cell.blob" />
               </el-col>
             </el-row>
             <el-row v-show="active_cell_mode === 'delete'">
@@ -422,7 +442,6 @@
 </template>
 
 <script>
-import DatabasePrototype from '../api/methods'
 import Question from '../components/Question'
 import Database from '../apicreate'
 export default {
@@ -479,6 +498,7 @@ export default {
       cell_target_y: '',
       cell_target_y_class: '',
       cell_target_label: 'None',
+      cell_target_img: [],
       cell_target_children_isempty: false,
 
       reload_question_key_for_add: 0,
@@ -490,7 +510,9 @@ export default {
         x_class: '',
         y: '',
         y_class: '',
-        file_list: []
+        img: [],
+        file_list: [],
+        blob: {}
       },
 
       reload_question_key_for_correct: 0,
@@ -500,7 +522,11 @@ export default {
         x: '',
         x_class: '',
         y: '',
-        y_class: ''
+        y_class: '',
+        img: [],
+        file_list: [],
+        blob: {},
+        img_is_changed: false
       }
     }
   },
@@ -526,6 +552,7 @@ export default {
       this.cell_target_y = '';
       this.cell_target_y_class = '';
       this.cell_target_children_isempty = false;
+      this.cell_target_img = [];
       this.show_directory_tree = false;
       this.show_migrating_directory_tree = false;
       Database.Base().get('/getDirectoryTree').then(result => {
@@ -544,17 +571,18 @@ export default {
     },
     resetCellTreeForCorrect() {
       this.selected_leaf_directory_target = false;
-      this.cell_target_label = this.correcting_cell.x;
+      this.cell_target_label = this.correcting_cell.label;
       this.cell_target_x = this.correcting_cell.x;
       this.cell_target_x_class = this.correcting_cell.x_class;
       this.cell_target_y = this.correcting_cell.y;
       this.cell_target_y_class = this.correcting_cell.y_class;
+      this.cell_target_img = this.correcting_cell.img;
       this.reload_question_key_for_target++;
-      const obj = {parentDirectory: this.directory_target_id};
+      const obj = { parentDirectory: this.directory_target_id };
       Database.Base().get('/getCellTree', {params: obj}).then(result => {
         this.cell_tree = result.data;
         this.selected_leaf_directory_target = true;
-      })
+      });
     },
     resetCellTreeForDelete() {
       this.selected_leaf_directory_target = false;
@@ -566,16 +594,17 @@ export default {
       this.cell_target_y = this.correcting_cell.y = '';
       this.cell_target_y_class = this.correcting_cell.y_class = '';
       this.cell_target_label = this.correcting_cell.label = 'None';
+      this.cell_target_img = this.correcting_cell.img = [];
+      this.resetCorrectingCellImage();
       this.cell_target_children_isempty = false;
       this.correcting_cell.isnumerical = false;
       this.active_cell_mode = '';
-      const obj = {parentDirectory: this.directory_target_id};
+      const obj = { parentDirectory: this.directory_target_id };
       Database.Base().get('/getCellTree', {params: obj}).then(result => {
         this.cell_tree = result.data;
         this.selected_leaf_directory_target = true;
       });
     },
-
     handleChangeTargetDirectory(data) {
       const target_obj = data[data.length - 1];
       this.directory_target_id = target_obj._id;
@@ -595,7 +624,6 @@ export default {
         this.selected_leaf_directory_target = false;
       }
     },
-
     addDirectory() {
       const obj = {
         type: this.adding_directory.type,
@@ -679,13 +707,15 @@ export default {
       }
     },
     deleteDirectoryDialog() {
-      if (this.directory_target_type === 'l') this.delete_directory_dialog = true;
+      if (this.directory_target_type === 'l') {
+        this.delete_directory_dialog = true;
+      }
       else this.deleteDirectory();
     },
     deleteDirectory() {
       this.delete_directory_dialog = false;
       const obj = {id: this.directory_target_id};
-      Database.Base().delete("/deleteDirectory", {data: obj}).then(result => {
+      Database.Base().delete('/deleteDirectory', {data: obj}).then(result => {
         if (result.status === 200) {
           this.$notify({
             title: 'Success',
@@ -713,11 +743,32 @@ export default {
       this.correcting_cell.y = this.cell_target_y = data.value.y;
       this.correcting_cell.y_class = this.cell_target_y_class = data.value.y_class;
       this.correcting_cell.isnumerical = data.value.isnumerical;
+      this.correcting_cell.img = this.cell_target_img = data.value.img;
       this.cell_target_children_isempty = data.value.children.length === 0;
       this.reload_question_key_for_target++;
-      this.reload_question_key_for_correct++;
+      this.resetCorrectingCellImage();
+      if (this.cell_target_img.length === 0) {
+        this.reload_question_key_for_correct++;
+      }
+      else {
+        (async () => {
+          let key, result, url;
+          const obj = { id: this.cell_target_id };
+          for (let i = 0; i < this.cell_target_img.length; i++) {
+            key = 'F_' + this.cell_target_img[i].split('.')[0];
+            obj.filename = this.cell_target_img[i];
+            result = await Database.Blob().get('/getImage', {params: obj});
+            url = window.URL.createObjectURL(result.data);
+            this.correcting_cell.blob[key] = url;
+            this.correcting_cell.file_list.push({
+              name: this.cell_target_img[i],
+              url: url
+            });
+          }
+          this.reload_question_key_for_correct++;
+        })();
+      }
     },
-
     addCell() {
       if (this.adding_cell.file_list.length === 0) {
         const obj = {
@@ -745,13 +796,14 @@ export default {
         formData.append('y', this.adding_cell.y);
         formData.append('y_class', this.adding_cell.y_class);
         formData.append('isRoot', this.adding_cell.type === 'r');
+        if (this.adding_cell.type !== 'r') {
+          formData.append('parent', this.cell_target_id);
+        }
         for (let i = 0; i < this.adding_cell.file_list.length; i++) {
           formData.append('file[]', this.adding_cell.file_list[i].raw);
         }
         Database.Base().post('/addCellWithImage', formData, {
-          headers: {
-            'content-type': 'multipart/form-data'
-          }
+          headers: { 'content-type': 'multipart/form-data' }
         }).then(this.notifyForAddCell);
       }
     },
@@ -773,40 +825,75 @@ export default {
       }
     },
     correctCell() {
-      const obj = {
-        parentDirectory: this.directory_target_id,
-        id: this.cell_target_id,
-        label: this.correcting_cell.label,
-        isnumerical: this.correcting_cell.isnumerical,
-        x: this.correcting_cell.x,
-        x_class: this.correcting_cell.x_class,
-        y: this.correcting_cell.y,
-        y_class: this.correcting_cell.y_class
-      };
-      DatabasePrototype.correctCell(obj).then(result => {
-        if (result.status === 200) {
-          this.$notify({
-            title: 'Success',
-            message: 'Successfully corrected cell',
-            type: 'success'
-          });
-          this.resetCellTreeForCorrect();
+      if (this.correcting_cell.img_is_changed) {
+        this.correcting_cell.img_is_changed = false;
+        const formData = new FormData();
+        formData.append('parentDirectory', this.directory_target_id);
+        formData.append('id', this.cell_target_id);
+        formData.append('label', this.correcting_cell.label);
+        formData.append('isnumerical', this.correcting_cell.isnumerical);
+        formData.append('x', this.correcting_cell.x);
+        formData.append('x_class', this.correcting_cell.x_class);
+        formData.append('y', this.correcting_cell.y);
+        formData.append('y_class', this.correcting_cell.y_class);
+        for (let i = 0; i < this.correcting_cell.img.length; i++) {
+          formData.append('img[]', this.correcting_cell.img[i]);
         }
-        else {
-          this.$notify({
-            title: 'Error',
-            message: 'Could not correct cell successfully',
-            type: 'error'
-          });
+        for (let i = 0; i < this.correcting_cell.file_list.length; i++) {
+          if (this.correcting_cell.file_list[i].status === 'ready') {
+            formData.append('file[]', this.correcting_cell.file_list[i].raw);
+          }
         }
-      });
+        Database.Base().post('/correctCellWithImage', formData, {
+          headers: { 'content-type': 'multipart/form-data' }
+        }).then(this.notifyForCorrectCell);
+      }
+      else {
+        const obj = {
+          parentDirectory: this.directory_target_id,
+          id: this.cell_target_id,
+          label: this.correcting_cell.label,
+          isnumerical: this.correcting_cell.isnumerical,
+          x: this.correcting_cell.x,
+          x_class: this.correcting_cell.x_class,
+          y: this.correcting_cell.y,
+          y_class: this.correcting_cell.y_class
+        };
+        Database.Base().post('/correctCell', obj).then(this.notifyForCorrectCell);
+      }
+    },
+    notifyForCorrectCell(result) {
+      if (result.status === 200) {
+        this.$notify({
+          title: 'Success',
+          message: 'Successfully corrected cell',
+          type: 'success'
+        });
+        this.resetCellTreeForCorrect();
+      }
+      else {
+        this.$notify({
+          title: 'Error',
+          message: 'Could not correct cell successfully',
+          type: 'error'
+        });
+      }
+    },
+    resetCorrectingCellImage() {
+      const keys = Object.keys(this.correcting_cell.blob);
+      for (let i = 0; i < keys.length; i++) {
+        window.URL.revokeObjectURL(this.correcting_cell.blob[keys[i]]);
+      }
+      this.correcting_cell.blob = {};
+      this.correcting_cell.file_list = [];
+      this.correcting_cell.img_is_changed = false;
     },
     deleteCell() {
       const obj = {
         parentDirectory: this.directory_target_id,
         id: this.cell_target_id
       };
-      DatabasePrototype.deleteCell(obj).then(result => {
+      Database.Base().delete('/deleteCell', {data: obj}).then(result => {
         if (result.status === 200) {
           this.$notify({
             title: 'Success',
@@ -831,10 +918,59 @@ export default {
       this.reload_question_key_for_correct++;
     },
     handleAddImage(file, fileList) {
-      this.adding_cell.file_list = fileList;
+      const idx = this.adding_cell.img.indexOf(file.name);
+      if (idx === -1) {
+        this.adding_cell.file_list = fileList;
+        const key = 'F_' + file.name.split('.')[0];
+        this.adding_cell.blob[key] = window.URL.createObjectURL(file.raw);
+        this.adding_cell.x += '%{' + key + '}';
+        this.adding_cell.y += '%{' + key + '}';
+      }
+      else {
+        this.$message({
+          message: 'This filename is already in use.',
+          type: 'error'
+        });
+      }
     },
     handleRemoveImage(file, fileList) {
       this.adding_cell.file_list = fileList;
+      const key = 'F_' + file.name.split('.')[0];
+      window.URL.revokeObjectURL(this.adding_cell.blob[key]);
+      delete this.adding_cell.blob[key];
+      this.adding_cell.x = this.adding_cell.x.replace('%{' + key + '}', '');
+      this.adding_cell.y = this.adding_cell.y.replace('%{' + key + '}', '');
+      const idx = this.adding_cell.img.indexOf(file.name);
+      this.adding_cell.img.splice(idx, 1);
+    },
+    handleAddImageForCorrect(file, fileList) {
+      const idx = this.correcting_cell.img.indexOf(file.raw.name);
+      if (idx === -1) {
+        this.correcting_cell.img.push(file.name);
+        this.correcting_cell.file_list = fileList;
+        const key = 'F_' + file.name.split('.')[0];
+        this.correcting_cell.blob[key] = window.URL.createObjectURL(file.raw);
+        this.correcting_cell.x += '%{' + key + '}';
+        this.correcting_cell.y += '%{' + key + '}';
+        this.correcting_cell.img_is_changed = true;
+      }
+      else {
+        this.$message({
+          message: 'This filename is already in use.',
+          type: 'error'
+        });
+      }
+    },
+    handleRemoveImageForCorrect(file, fileList) {
+      this.correcting_cell.file_list = fileList;
+      const key = 'F_' + file.name.split('.')[0];
+      window.URL.revokeObjectURL(this.correcting_cell.blob[key]);
+      delete this.correcting_cell.blob[key];
+      this.correcting_cell.x = this.correcting_cell.x.replace('%{' + key + '}', '');
+      this.correcting_cell.y = this.correcting_cell.y.replace('%{' + key + '}', '');
+      const idx = this.correcting_cell.img.indexOf(file.name);
+      this.correcting_cell.img.splice(idx, 1);
+      this.correcting_cell.img_is_changed = true;
     },
     goTop() {
       this.$router.push({ path: '/' });
