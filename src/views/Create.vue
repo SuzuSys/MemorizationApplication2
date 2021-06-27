@@ -442,7 +442,6 @@
 </template>
 
 <script>
-import DatabasePrototype from '../api/methods'
 import Question from '../components/Question'
 import Database from '../apicreate'
 export default {
@@ -708,13 +707,15 @@ export default {
       }
     },
     deleteDirectoryDialog() {
-      if (this.directory_target_type === 'l') this.delete_directory_dialog = true;
+      if (this.directory_target_type === 'l') {
+        this.delete_directory_dialog = true;
+      }
       else this.deleteDirectory();
     },
     deleteDirectory() {
       this.delete_directory_dialog = false;
       const obj = {id: this.directory_target_id};
-      Database.Base().delete("/deleteDirectory", {data: obj}).then(result => {
+      Database.Base().delete('/deleteDirectory', {data: obj}).then(result => {
         if (result.status === 200) {
           this.$notify({
             title: 'Success',
@@ -824,7 +825,6 @@ export default {
       }
     },
     correctCell() {
-      console.log('detect');
       if (this.correcting_cell.img_is_changed) {
         this.correcting_cell.img_is_changed = false;
         const formData = new FormData();
@@ -893,7 +893,7 @@ export default {
         parentDirectory: this.directory_target_id,
         id: this.cell_target_id
       };
-      DatabasePrototype.deleteCell(obj).then(result => {
+      Database.Base().delete('/deleteCell', {data: obj}).then(result => {
         if (result.status === 200) {
           this.$notify({
             title: 'Success',

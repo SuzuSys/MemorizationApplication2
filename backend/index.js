@@ -9,7 +9,7 @@ const Directory = schema_obj.directory;
 const fs = require("fs-extra");
 const out = fs.createWriteStream("info.log");
 const logger = new console.Console(out);
-logger.log('Can you looking this sentence?');
+logger.log('---ERROR STORAGE---');
 // end{debug setting}
 
 const connectOption = {
@@ -44,23 +44,20 @@ app.get("/getDirectoryTree", (req, res) => {
       res.json(tree);
     } catch (err) {
       logger.log(err);
-      res.status(500).send("faild");
+      res.status(500).send();
     }
   })();
 });
 async function DirectoryToObject(obj) {
   const piece = {label: obj.name, value: obj};
-  if (obj.type === 'l') {
-    piece.isleaf = true;
-    piece.isnotleaf = false;
-  } 
-  else {
-    piece.isleaf = false;
-    piece.isnotleaf = true;
+  piece.isleaf = obj.type === 'l';
+  piece.isnotleaf = obj.type !== 'l';
+  if (obj.type !== 'l') {
     if (obj.children.length !== 0) {
       piece.children = [];
+      let child;
       for (let i = 0; i < obj.children.length; i++) {
-        const child = await Directory.findOne({_id: obj.children[i]}).exec();
+        child = await Directory.findOne({_id: obj.children[i]}).exec();
         piece.children.push(await DirectoryToObject(child));
       }
     }
@@ -88,15 +85,16 @@ app.get("/getCellTree", (req, res) => {
       res.json(tree);
     } catch (err) {
       logger.log(err);
-      res.status(500).send("faild");
+      res.status(500).send();
     }
   })();
 });
 async function CellToObject(obj, parentDirectory) {
   const piece = {label: obj.label, id: obj._id, value: obj};
   piece.children = [];
+  let child;
   for (let i = 0; i < obj.children.length; i++) {
-    const child = (await Directory.aggregate([
+    child = (await Directory.aggregate([
       {$match: {_id: mongoose.Types.ObjectId(parentDirectory)}},
       {$unwind: "$cells"},
       {$match: {"cells._id": mongoose.Types.ObjectId(obj.children[i])}},
@@ -146,7 +144,7 @@ app.get("/getCellLayer", (req, res) => {
       res.json(cellLayer);
     } catch (err) {
       logger.log(err);
-      res.status(500).send("faild");
+      res.status(500).send();
     }
   })();
 });
@@ -165,10 +163,11 @@ app.post("/addDirectory", (req, res) => {
         ).exec();
       }
       directory.name = obj.name;
-      res.json(await directory.save());
+      await directory.save();
+      res.status(200).send();
     } catch (err) {
       logger.log(err);
-      res.status(500).send("faild");
+      res.status(500).send();
     }
   })();
 });
@@ -177,13 +176,14 @@ app.post("/renameDirectory", (req, res) => {
   (async () => {
     try {
       const obj = req.body;
-      res.json(await Directory.updateOne(
+      await Directory.updateOne(
         {_id: obj.id},
         {name: obj.name}
-      ).exec());
+      ).exec();
+      res.status(200).send();
     } catch (err) {
       logger.log(err);
-      res.status(500).send("faild");
+      res.status(500).send();
     }
   })();
 });
@@ -201,13 +201,14 @@ app.post("/migrateDirectory", (req, res) => {
         {_id: obj.to},
         {$addToSet: {children: obj.id}}
       ).exec();
-      res.json(await Directory.updateOne(
+      await Directory.updateOne(
         {_id: obj.id},
         {parent: obj.to}
-      ).exec());
+      ).exec();
+      res.status(200).send();
     } catch (err) {
       logger.log(err);
-      res.status(500).send("faild");
+      res.status(500).send();
     }
   })();
 });
@@ -224,12 +225,13 @@ app.delete("/deleteDirectory", (req, res) => {
             {$pull: {children: obj.id}}
           ).exec();
         }
-        res.json(await Directory.deleteOne({_id: obj.id}).exec());
+        await Directory.deleteOne({_id: obj.id}).exec();
+        res.status(200).send();
       }
       else throw new Error();
     } catch (err) {
       logger.log(err);
-      res.status(500).send("faild");
+      res.status(500).send();
     }
   })();
 });
@@ -269,13 +271,14 @@ app.post("/addCell", (req, res) => {
       cell.y = obj.y;
       cell.y_class = obj.y_class;
       cell.img = [];
-      res.json(await Directory.updateOne(
+      await Directory.updateOne(
         {_id: obj.parentDirectory},
         {$addToSet: {cells: cell}}
-      ).exec());
+      ).exec();
+      res.status(200).send();
     } catch (err) {
       logger.log(err);
-      res.status(500).send("faild");
+      res.status(500).send();
     }
   })();
 });
@@ -326,13 +329,14 @@ app.post("/addCellWithImage", upload.array('file[]'), (req, res) => {
         fs.moveSync(present_url, to_url);
       }
       cell.img = images;
-      res.json(await Directory.updateOne(
+      await Directory.updateOne(
         {_id: obj.parentDirectory},
         {$addToSet: {cells: cell}}
-      ).exec());
+      ).exec();
+      res.status(200).send();
     } catch (err) {
       logger.log(err);
-      res.status(500).send("faild");
+      res.status(500).send();
     }
   })();
 });
@@ -345,7 +349,7 @@ app.get("/getImage", (req, res) => {
       res.status(200).send(fs.readFileSync(url));
     } catch (err) {
       logger.log(err);
-      res.status(500).send("faild");
+      res.status(500).send();
     }
   })();
 });
@@ -384,7 +388,7 @@ app.post("/correctCell", (req, res) => {
       res.status(200).send();
     } catch (err) {
       logger.log(err);
-      res.status(500).send("faild");
+      res.status(500).send();
     }
   })();
 });
@@ -441,7 +445,50 @@ app.post("/correctCellWithImage", upload.array('file[]'), (req, res) => {
       res.status(200).send();
     } catch (err) {
       logger.log(err);
-      res.status(500).send("faild");
+      res.status(500).send();
+    }
+  })();
+});
+
+app.delete("/deleteCell", (req, res) => {
+  (async () => {
+    try {
+      const obj = req.body;
+      const target = (await Directory.aggregate([
+        {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
+        {$unwind: "$cells"},
+        {$match: {"cells._id": mongoose.Types.ObjectId(obj.id)}},
+        {$group: {_id: "$_id", data: {$push: "$cells"}}}
+      ]).exec())[0].data[0];
+      if (target.children.length === 0) {
+        if (target.layer !== 0) {
+          const parent = (await Directory.aggregate([
+            {$match: {_id: mongoose.Types.ObjectId(obj.parentDirectory)}},
+            {$unwind: "$cells"},
+            {$match: {"cells._id": mongoose.Types.ObjectId(target.parent)}},
+            {$group: {_id: "$_id", data: {$push: "$cells"}}}
+          ]).exec())[0].data[0];
+          await Directory.updateOne(
+            {_id: obj.parentDirectory},
+            {$pull: {cells: {_id: parent._id}}}
+          ).exec();
+          parent.children.splice(parent.children.indexOf(obj.id), 1);
+          await Directory.updateOne(
+            {_id: obj.parentDirectory},
+            {$addToSet: {cells: parent}}
+          ).exec();
+        }
+        await Directory.updateOne(
+          {_id: obj.parentDirectory},
+          {$pull: {cells: {_id: obj.id}}}
+        ).exec();
+        fs.removeSync('image/' + obj.id + '/');
+        res.status(200).send();
+      }
+      else throw new Error();
+    } catch (err) {
+      logger.log(err);
+      res.status(500).send();
     }
   })();
 });

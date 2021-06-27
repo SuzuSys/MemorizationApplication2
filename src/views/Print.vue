@@ -262,7 +262,6 @@ export default {
       });
     },
     addSheet() {
-      console.log(this.making_sheet.layer_value[0]);
       const obj = {
         cells: this.making_sheet.layer_value[0].cells,
         directory: this.making_sheet.directory_label,
