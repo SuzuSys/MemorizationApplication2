@@ -16,7 +16,7 @@
             <span v-for="(item, index) in (isextype ? formated_x : formated_y)" :key="index">
               <span v-if="item.sentence.if" v-html="item.sentence.content"></span>
               <vue-mathjax v-if="item.math.if" :formula="item.math.content"></vue-mathjax>
-              <img v-if="item.img.if" :src="item.img.url">
+              <img v-if="item.img.if" :src="item.img.url" :style="{width: (item.img.width + 'px')}">
             </span>
           </el-col>
         </el-row>
@@ -25,7 +25,7 @@
             <span v-for="(item, index) in (isextype ? formated_y : formated_x)" :key="index">
               <span v-if="item.sentence.if" v-html="item.sentence.content"></span>
               <vue-mathjax v-if="item.math.if" :formula="item.math.content"></vue-mathjax>
-              <img v-if="item.img.if" :src="item.img.url">
+              <img v-if="item.img.if" :src="item.img.url" :style="{width: (item.img.width + 'px')}">
             </span>
           </el-col>
         </el-row>
@@ -88,8 +88,10 @@ export default {
     else {
       this.blobUrl = this.blob;
     }
-    let splited, urlkey, temp;
-    const re = /(%{.+?}|\$\$.+?\$\$|\$.+?\$)/;
+    let splited, cmd, urlkey, width, temp;
+    const re = /(%{.+?\|\d+?}|\$\$.+?\$\$|\$.+?\$)/;
+    const mathre = /(\$\$.+?\$\$|\$.+?\$)/;
+    const imgre = /%{.+?\|\d+?}/;
     const wrap = [
       {input: this.x, output: this.formated_x},
       {input: this.y, output: this.formated_y}
@@ -99,21 +101,20 @@ export default {
       for (let j = 0; j < splited.length; j++) {
         if (splited[j] !== '') {
           temp = {
-            img: {if: false, url: ''},
+            img: {if: false, url: '', width: ''},
             math: {if: false, content: ''},
             sentence: {if: false, content: ''}
           };
-          if (
-            splited[j][0] === '$'
-            && splited[j].slice(-1) === '$'
-          ) {
+          if (mathre.test(splited[j])) {
             temp.math.if = true;
             temp.math.content = splited[j];
           }
-          else if (splited[j][0] === '%') {
+          else if (imgre.test(splited[j])) {
             temp.img.if = true;
-            urlkey = splited[j].slice(2, -1);
+            cmd = splited[j].slice(2, -1).split('|');
+            [urlkey, width] = cmd;
             temp.img.url = this.blobUrl[urlkey];
+            temp.img.width = width;
           }
           else {
             temp.sentence.if = true;
