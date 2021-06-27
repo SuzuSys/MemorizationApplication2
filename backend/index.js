@@ -224,6 +224,11 @@ app.delete("/deleteDirectory", (req, res) => {
             {_id: target.parent},
             {$pull: {children: obj.id}}
           ).exec();
+          if (target.type === 'l') {
+            for (let i = 0; i < target.cells.length; i++) {
+              fs.removeSync('image/' + target.cells[i]._id);
+            }
+          }
         }
         await Directory.deleteOne({_id: obj.id}).exec();
         res.status(200).send();
