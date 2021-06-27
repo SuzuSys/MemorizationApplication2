@@ -923,8 +923,8 @@ export default {
         this.adding_cell.file_list = fileList;
         const key = 'F_' + file.name.split('.')[0];
         this.adding_cell.blob[key] = window.URL.createObjectURL(file.raw);
-        this.adding_cell.x += '%{' + key + '}';
-        this.adding_cell.y += '%{' + key + '}';
+        this.adding_cell.x += '%{' + key + '|300}';
+        this.adding_cell.y += '%{' + key + '|300}';
       }
       else {
         this.$message({
@@ -938,8 +938,9 @@ export default {
       const key = 'F_' + file.name.split('.')[0];
       window.URL.revokeObjectURL(this.adding_cell.blob[key]);
       delete this.adding_cell.blob[key];
-      this.adding_cell.x = this.adding_cell.x.replace('%{' + key + '}', '');
-      this.adding_cell.y = this.adding_cell.y.replace('%{' + key + '}', '');
+      const re = new RegExp('%{' + key + '\\|\\d+?}', 'g');
+      this.adding_cell.x = this.adding_cell.x.replace(re, '');
+      this.adding_cell.y = this.adding_cell.y.replace(re, '');
       const idx = this.adding_cell.img.indexOf(file.name);
       this.adding_cell.img.splice(idx, 1);
     },
@@ -950,8 +951,8 @@ export default {
         this.correcting_cell.file_list = fileList;
         const key = 'F_' + file.name.split('.')[0];
         this.correcting_cell.blob[key] = window.URL.createObjectURL(file.raw);
-        this.correcting_cell.x += '%{' + key + '}';
-        this.correcting_cell.y += '%{' + key + '}';
+        this.correcting_cell.x += '%{' + key + '|300}';
+        this.correcting_cell.y += '%{' + key + '|300}';
         this.correcting_cell.img_is_changed = true;
       }
       else {
@@ -966,8 +967,9 @@ export default {
       const key = 'F_' + file.name.split('.')[0];
       window.URL.revokeObjectURL(this.correcting_cell.blob[key]);
       delete this.correcting_cell.blob[key];
-      this.correcting_cell.x = this.correcting_cell.x.replace('%{' + key + '}', '');
-      this.correcting_cell.y = this.correcting_cell.y.replace('%{' + key + '}', '');
+      const re = new RegExp('%{' + key + '\\|\\d+?}', 'g');
+      this.correcting_cell.x = this.correcting_cell.x.replace(re, '');
+      this.correcting_cell.y = this.correcting_cell.y.replace(re, '');
       const idx = this.correcting_cell.img.indexOf(file.name);
       this.correcting_cell.img.splice(idx, 1);
       this.correcting_cell.img_is_changed = true;
