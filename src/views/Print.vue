@@ -132,7 +132,7 @@
                     <el-input v-model="other_setting.title"></el-input>
                   </el-form-item>
                   <el-form-item label="Shuffle">
-                    <el-switch v-model="other_setting.shuffle"></el-switch>
+                    <el-switch v-model="other_setting.shuffle" @change="changeShuffle"></el-switch>
                   </el-form-item>
               </el-form>
             </el-col>
@@ -174,7 +174,7 @@
             </el-col>
           </el-row>
         </div>
-        <div id="main">
+        <div id="main" v-if="render_main">
           <Question 
             v-for="(item, index) in questions"
             :key="index"
@@ -214,6 +214,8 @@ export default {
   },
   data() {
     return {
+      render_main: true,
+
       drawer: false,
       exist_document: false,
       show_answer: false,
@@ -295,6 +297,10 @@ export default {
       this.questions = arr;
       this.drawer = false;
       this.exist_document = true;
+      this.render_main = true;
+    },
+    changeShuffle() {
+      this.render_main = false;
     },
     goTop() {
       if (this.exist_document) {
