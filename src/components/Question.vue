@@ -97,6 +97,7 @@ export default {
       {input: this.y, output: this.formated_y}
     ];
     for (let i = 0; i < wrap.length; i++) {
+      wrap[i].input = wrap[i].input.replace(/\r?\n/g, '');
       splited = wrap[i].input.split(re);
       for (let j = 0; j < splited.length; j++) {
         if (splited[j] !== '') {
