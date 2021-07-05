@@ -923,8 +923,8 @@ export default {
         this.adding_cell.file_list = fileList;
         const key = 'F_' + file.name.split('.')[0];
         this.adding_cell.blob[key] = window.URL.createObjectURL(file.raw);
-        this.adding_cell.x += '%{' + key + '|300}';
-        this.adding_cell.y += '%{' + key + '|300}';
+        this.adding_cell.x += '%{' + key + '|3002}';
+        this.adding_cell.y += '%{' + key + '|3002}';
       }
       else {
         this.$message({
@@ -951,8 +951,8 @@ export default {
         this.correcting_cell.file_list = fileList;
         const key = 'F_' + file.name.split('.')[0];
         this.correcting_cell.blob[key] = window.URL.createObjectURL(file.raw);
-        this.correcting_cell.x += '%{' + key + '|300}';
-        this.correcting_cell.y += '%{' + key + '|300}';
+        this.correcting_cell.x += '%{' + key + '|3002}';
+        this.correcting_cell.y += '%{' + key + '|3002}';
         this.correcting_cell.img_is_changed = true;
       }
       else {
