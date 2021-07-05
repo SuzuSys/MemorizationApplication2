@@ -25,7 +25,9 @@
             <span v-for="(item, index) in (isextype ? formated_y : formated_x)" :key="index">
               <span v-if="item.sentence.if" v-html="item.sentence.content"></span>
               <vue-mathjax v-if="item.math.if" :formula="item.math.content"></vue-mathjax>
-              <img v-if="item.img.if" :src="item.img.url" :style="{width: (item.img.width + 'px')}">
+              <div v-if="item.img.if" :style="imgFormat(item.img.position)">
+                <img :src="item.img.url" :style="{width: (item.img.width + 'px')}">
+              </div>
             </span>
           </el-col>
         </el-row>
@@ -72,6 +74,20 @@ export default {
         str = '0' + str;
       }
       return str;
+    },
+    imgFormat: function() {
+      return function(pos) {
+        const obj = {};
+        if (pos === 1 || pos === 2 || pos === 3) {
+          obj.display = 'block';
+          const rcl = ['left', 'center', 'right'];
+          obj['text-align'] = rcl[pos-1];
+        }
+        else {
+          obj.display = 'inline';
+        }
+        return obj;
+      }
     }
   },
   created: async function() {
@@ -102,7 +118,7 @@ export default {
       for (let j = 0; j < splited.length; j++) {
         if (splited[j] !== '') {
           temp = {
-            img: {if: false, url: '', width: ''},
+            img: {if: false, url: '', width: '', position: 0},
             math: {if: false, content: ''},
             sentence: {if: false, content: ''}
           };
@@ -115,7 +131,8 @@ export default {
             cmd = splited[j].slice(2, -1).split('|');
             [urlkey, width] = cmd;
             temp.img.url = this.blobUrl[urlkey];
-            temp.img.width = width;
+            temp.img.width = width.slice(0, -1);
+            temp.img.position = Number(width.slice(-1));
           }
           else {
             temp.sentence.if = true;
