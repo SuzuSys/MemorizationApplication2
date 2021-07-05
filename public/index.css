@@ -11,6 +11,34 @@ code {
   font-family: note monospace,SFMono-Regular,Consolas,Menlo,Courier,monospace;
   color: steelblue;
 }
+code.black {
+  font-family: note monospace,SFMono-Regular,Consolas,Menlo,Courier,monospace;
+  color: #282828;
+}
+table.table {
+  border-collapse: collapse;
+  margin: auto;
+  break-inside: avoid-page;
+}
+table.table tr {
+	text-align: center;
+	padding-left:10px;
+}
+table.table td{
+	padding:5px;
+	border-top: 1px solid #ffffff;
+	border-bottom:1px solid #e0e0e0;
+	border-left: 1px solid #e0e0e0;
+	background: #fafafa;
+}
+table.table th {
+  padding: 5px;
+  border-top: 1px solid #ffffff;
+	border-bottom:1px solid #e0e0e0;
+	border-left: 1px solid #e0e0e0;
+	background: #fafafa;
+  font-weight: bold;
+}
 
 @media print {
   body {
