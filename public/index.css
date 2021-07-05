@@ -31,6 +31,12 @@ table.table td{
 	border-left: 1px solid #e0e0e0;
 	background: #fafafa;
 }
+table.table tr:first-child td {
+  border-top: 1px solid #e0e0e0;
+}
+table.table td:last-child {
+  border-right: 1px solid #e0e0e0;
+}
 table.table th {
   padding: 5px;
   border-top: 1px solid #ffffff;
@@ -38,6 +44,21 @@ table.table th {
 	border-left: 1px solid #e0e0e0;
 	background: #fafafa;
   font-weight: bold;
+}
+table.table tr:first-child th {
+  border-top: 1px solid #e0e0e0;
+}
+table.table th:last-child {
+  border-right: 1px solid #e0e0e0;
+}
+table.table td.left, th.left {
+  text-align: left;
+}
+table.table tr.left {
+  text-align: left;
+}
+table.table.left tr {
+  text-align: left;
 }
 
 @media print {
