@@ -772,13 +772,14 @@ export default {
       }
     },
     addCell() {
-      console.log('addCell');
-      if (this.directory_target_id !== this.cell_target_directory_id) {
-        this.$message({
-          message: 'The target cell does not belong to the target directory',
-          type: 'error'
-        });
-        return;
+      if (
+        this.directory_target_id !== this.cell_target_directory_id
+        && this.adding_cell.type !== 'r') {
+          this.$message({
+            message: 'The target cell does not belong to the target directory',
+            type: 'error'
+          });
+          return;
       }
       if (this.adding_cell.file_list.length === 0) {
         const obj = {

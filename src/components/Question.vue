@@ -16,7 +16,9 @@
             <span v-for="(item, index) in (isextype ? formated_x : formated_y)" :key="index">
               <span v-if="item.sentence.if" v-html="item.sentence.content"></span>
               <vue-mathjax v-if="item.math.if" :formula="item.math.content"></vue-mathjax>
-              <img v-if="item.img.if" :src="item.img.url" :style="{width: (item.img.width + 'px')}">
+              <div v-if="item.img.if" :style="imgFormat(item.img.position)">
+                <img :src="item.img.url" :style="{width: (item.img.width + 'px')}">
+              </div>
             </span>
           </el-col>
         </el-row>
