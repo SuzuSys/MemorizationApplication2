@@ -30,12 +30,21 @@
           </el-col>
         </el-row>
         <el-divider content-position="left">Cell Tree</el-divider>
+        <el-input
+          placeholder="Filter keyword"
+          v-model="filterText"
+          size="small">
+        </el-input>
         <el-tree
+          class="filter-tree"
           empty-text="No Cell"
           :data="cell_tree"
           @node-click="handleClickCell"
           node-key="id"
-          v-if="selected_leaf_directory_target"></el-tree>
+          v-if="selected_leaf_directory_target"
+          :filter-node-method="filterNode"
+          ref="tree">
+        </el-tree>
       </el-aside>
 
       <el-main>
@@ -451,6 +460,7 @@ export default {
   },
   data() {
     return {
+      filterText: '',
       operation_target: 'c',
       directory_tree: [],
       show_directory_tree: true,
@@ -985,12 +995,21 @@ export default {
       this.correcting_cell.img.splice(idx, 1);
       this.correcting_cell.img_is_changed = true;
     },
+    filterNode(value, data) {
+      if (!value) return true;
+      return data.label.indexOf(value) !== -1;
+    },
     goTop() {
       this.$router.push({ path: '/' });
     }
   },
   created: async function () {
     this.directory_tree = (await Database.Base().get('/getDirectoryTree')).data;
+  },
+  watch: {
+    filterText(val) {
+      this.$refs.tree.filter(val);
+    }
   }
 }
 </script>
